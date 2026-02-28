@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "pg": "^8.19.0",
+    "qrcode": "^1.5.4"
+  }
+}

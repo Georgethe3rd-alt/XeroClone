@@ -56,6 +56,8 @@ Skills define _how_ tools work. This file is for _your_ specifics — the stuff 
   ```
   ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIChK2hE/M6mGlgkMFPbsZjgofv94jX/Eah7wFonDmxg8 george-openclaw@agentmail.to
   ```
-- **Status**: Repository initialized, SSH key needs to be added to GitHub account
+- **PAT**: `<GITHUB_PAT>`
+- **Remote**: HTTPS with PAT auth (switched from SSH)
+- **Status**: ✅ Pushed and working
 
 ---

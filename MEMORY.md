@@ -62,4 +62,31 @@ Key lesson: They didn't just respond to requests - they anticipated needs and ha
 
 ---
 
-_Last updated: 2026-02-19_
+## Wayne Owns WiPay
+- WiPay Caribbean (wipaycaribbean.com) — Caribbean payment processor
+- Use WiPay for ALL payment integrations, never Stripe
+- API: https://tt.wipayfinancial.com/plugins/payments/request
+
+## Jarvis Platform (Built 2026-03-01)
+- Multi-tenant AI assistant via WhatsApp Business API
+- VPS: 187.77.217.138:3003 | Service: jarvis-memorae
+- GitHub: Georgethe3rd-alt/Jarvis
+- Admin: admin / Jarvis2026#
+- Stack: Node.js, Express, SQLite, Anthropic, Whisper, ElevenLabs, WiPay
+- George's personality is the default DNA for every new user
+- Full feature list: memory, reminders, voice notes, phone calls, image/doc processing, billing, onboarding, briefings, sharing, admin console, user dashboard, analytics, rate limiting, backups, email, error monitoring, 2FA, data export
+- **Domain**: jarvisproject.ai (GoDaddy, SSL via Let's Encrypt)
+- **Meta Facebook**: Jarvis Stark / upload@wipaytoday.com / 6lllOv263C26!
+- **Meta Developer**: Verified via +17867941422
+- **Meta App**: Jarvis AI Assistant (Business type)
+- **Business Portfolio**: "Jarvis AI" (ID: 1422807532869755)
+- **System User**: "Jarvis Bot" (ID: 61585808364328, permanent token)
+- **Webhook**: https://jarvisproject.ai/webhook, verify token: jarvis-verify-2026
+- **WiPay account**: jarvis@wipaytoday.com / 6lllOv263C26!
+- **Active users**: Wayne (Tenant #2), Keisha (Tenant #3)
+
+## LoopVybz Backup (2026-03-01)
+- GitHub: Georgethe3rd-alt/loopvybz (main + mobile branches)
+- SSH deploy key: loopvybz_key (separate from Jarvis key)
+
+_Last updated: 2026-03-01_

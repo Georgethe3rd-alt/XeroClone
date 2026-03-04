@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Jarvis Admin</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Rajdhani',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#020a18;color:#c8dce8;font-size:14px;letter-spacing:0.3px}
+    .login-wrap{display:flex;justify-content:center;align-items:center;min-height:100vh;background:radial-gradient(circle at center,rgba(0,170,255,0.05),transparent 70%)}
+    .login-box{background:rgba(0,170,255,0.04);padding:2rem;border-radius:0;width:360px;border:1px solid rgba(0,170,255,0.15);position:relative}
+    .login-box::before{content:'ADMIN ACCESS';position:absolute;top:-10px;left:20px;font-family:'Orbitron',monospace;font-size:0.6rem;letter-spacing:3px;color:#0af;background:#020a18;padding:0 8px;opacity:0.7}
+    .login-box h1{text-align:center;margin-bottom:1.5rem;color:#0af;font-family:'Orbitron',monospace;font-size:1.2rem;letter-spacing:2px}
+    input,select,textarea{width:100%;padding:10px 12px;margin-bottom:10px;background:rgba(0,5,15,0.9);border:1px solid rgba(0,170,255,0.12);border-radius:8px;color:#e0e0e0;font-size:13px;font-family:inherit}
+    textarea{min-height:120px;resize:vertical}
+    .btn{padding:10px 20px;background:#0af;color:#0a0a0a;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px}
+    .btn:hover{background:#0090d9}
+    .btn-danger{background:#ff6b6b;color:#fff}
+    .btn-sm{padding:5px 12px;font-size:12px}
+    .error{color:#ff6b6b;text-align:center;margin-top:8px;font-size:13px}
+    .app{display:none}
+    .sidebar{position:fixed;left:0;top:0;width:200px;height:100vh;background:rgba(0,10,25,0.95);border-right:1px solid rgba(0,170,255,0.15);padding:1rem 0;overflow-y:auto}
+    .sidebar h2{padding:0 1rem;color:#0af;font-size:1rem;margin-bottom:1.5rem;font-family:'Orbitron',monospace;letter-spacing:1px}
+    .sidebar a{display:block;padding:9px 1rem;color:#aaa;text-decoration:none;font-size:13px;cursor:pointer}
+    .sidebar a:hover,.sidebar a.active{color:#fff;background:rgba(0,170,255,0.1);border-left:3px solid #0af}
+    .sidebar .logout{position:absolute;bottom:1rem;left:0;right:0;color:#ff6b6b}
+    .main{margin-left:200px;padding:1.5rem}
+    .main h1{margin-bottom:1rem;font-size:1.3rem}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem}
+    .card{background:rgba(0,20,40,0.6);padding:1.2rem;border-radius:10px;border:1px solid rgba(0,170,255,0.12)}
+    .card .label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px}
+    .card .value{font-size:1.8rem;font-weight:700;color:#0af;margin-top:2px}
+    .card .sub{font-size:11px;color:#666;margin-top:2px}
+    table{width:100%;border-collapse:collapse;background:rgba(0,20,40,0.6);border-radius:10px;overflow:hidden;margin-bottom:1rem}
+    th,td{padding:10px 14px;text-align:left;border-bottom:1px solid rgba(0,170,255,0.08);font-size:13px}
+    th{background:rgba(0,30,60,0.8);color:#888;text-transform:uppercase;font-size:11px;letter-spacing:1px}
+    tr:hover{background:rgba(0,170,255,0.04)}
+    tr[onclick]{cursor:pointer}
+    .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+    .b-green{background:rgba(0,170,255,0.2);color:#0af}
+    .b-yellow{background:rgba(255,193,7,0.2);color:#ffc107}
+    .b-red{background:rgba(255,107,107,0.2);color:#ff6b6b}
+    .config-box{background:rgba(0,20,40,0.6);padding:1.2rem;border-radius:10px;border:1px solid rgba(0,170,255,0.12);margin-bottom:1rem}
+    .config-box h3{color:#0af;margin-bottom:10px;font-size:14px}
+    .row{display:flex;gap:10px;margin-bottom:8px}
+    .row>*{flex:1}
+    .convo{max-height:500px;overflow-y:auto;background:rgba(0,10,20,0.8);border-radius:10px;padding:1rem;margin-bottom:1rem}
+    .msg{margin-bottom:6px;padding:8px 12px;border-radius:8px;max-width:80%;font-size:13px;line-height:1.4}
+    .msg.user{background:rgba(0,30,60,0.8);margin-left:auto}
+    .msg.assistant{background:#1a2e1a}
+    .msg .ts{font-size:10px;color:#555;margin-top:3px}
+    .tabs{display:flex;gap:4px;margin-bottom:1rem}
+    .tab{padding:6px 14px;background:rgba(0,20,40,0.6);border:1px solid rgba(0,170,255,0.12);border-radius:6px;cursor:pointer;font-size:12px;color:#aaa}
+    .tab.active{background:#0af;color:#0a0a0a;border-color:#0af}
+    .back{color:#0af;cursor:pointer;font-size:13px;margin-bottom:1rem;display:inline-block}
+    .hidden{display:none!important}
+    /* Hamburger */
+    .hamburger{display:none;position:fixed;top:10px;left:10px;z-index:1001;background:rgba(0,20,40,0.6);border:1px solid rgba(0,170,255,0.12);border-radius:6px;padding:8px 12px;cursor:pointer;color:#0af;font-size:18px}
+    .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999}
+    @media(max-width:768px){
+      .hamburger{display:block}
+      .sidebar{transform:translateX(-100%);transition:transform 0.3s;z-index:1000;width:240px}
+      .sidebar.open{transform:translateX(0)}
+      .sidebar-overlay.open{display:block}
+      .main{margin-left:0;padding:1rem;padding-top:50px}
+      .grid{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+      table{display:block;overflow-x:auto;white-space:nowrap}
+      .card .value{font-size:1.4rem}
+      .row{flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-wrap" id="loginView">
+  <div class="login-box">
+    <h1><img src="/jarvis-helm.svg" alt="" style="width:32px;height:auto;vertical-align:middle;filter:drop-shadow(0 0 8px rgba(120,200,255,0.3));margin-right:8px">Jarvis Admin</h1>
+    <input id="username" placeholder="Username" autocomplete="username">
+    <input id="password" type="password" placeholder="Password" autocomplete="current-password">
+    <input id="totpInput" type="text" placeholder="2FA Code (if enabled)" autocomplete="one-time-code" style="display:none">
+    <button class="btn" style="width:100%" onclick="login()">Sign In</button>
+    <div class="error" id="loginErr"></div>
+  </div>
+</div>
+
+<div class="app" id="appView">
+  <div class="hamburger" id="hamburger" onclick="toggleSidebar()">☰</div>
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+  <div class="sidebar" id="sidebar">
+    <h2 style="display:flex;align-items:center;gap:8px"><img src="/jarvis-helm.svg" alt="" style="width:24px;height:auto;filter:drop-shadow(0 0 8px rgba(120,200,255,0.3))">Jarvis</h2>
+    <a onclick="nav('dash')" id="n-dash" class="active">📊 Dashboard</a>
+    <a onclick="nav('tenants')" id="n-tenants">👥 Tenants</a>
+    <a onclick="nav('signups')" id="n-signups">📝 Signups</a>
+    <a onclick="nav('config')" id="n-config">🔑 API Keys</a>
+    <a onclick="nav('usage')" id="n-usage">📈 Usage</a>
+    <a onclick="nav('analytics')" id="n-analytics">📊 Analytics</a>
+    <a onclick="nav('errors')" id="n-errors">🚨 Errors</a>
+    <a onclick="nav('backups')" id="n-backups">💾 Backups</a>
+    <a onclick="nav('security')" id="n-security">🔐 Security</a>
+    <a class="logout" onclick="logout()">🚪 Logout</a>
+  </div>
+  <div class="main">
+    <!-- Dashboard -->
+    <div id="p-dash">
+      <h1>Dashboard</h1>
+      <div class="grid" id="statsGrid"></div>
+    </div>
+
+    <!-- Tenants -->
+    <div id="p-tenants" class="hidden">
+      <h1>Tenants</h1>
+      <table><thead><tr><th>ID</th><th>Phone</th><th>Name</th><th>Status</th><th>Messages</th><th>Memories</th><th>Last Active</th></tr></thead>
+      <tbody id="tenantsList"></tbody></table>
+    </div>
+
+    <!-- Tenant Detail -->
+    <div id="p-tenant" class="hidden">
+      <span class="back" onclick="nav('tenants')">← Back to tenants</span>
+      <h1 id="tenantTitle"></h1>
+      <div class="grid" id="tenantStats"></div>
+      <div class="tabs">
+        <div class="tab active" onclick="tenantTab('convo',this)">💬 Conversation</div>
+        <div class="tab" onclick="tenantTab('mems',this)">🧠 Memories</div>
+        <div class="tab" onclick="tenantTab('rems',this)">⏰ Reminders</div>
+        <div class="tab" onclick="tenantTab('files',this)">📁 Files</div>
+        <div class="tab" onclick="tenantTab('settings',this)">⚙️ Settings</div>
+      </div>
+      <div id="t-convo"></div>
+      <div id="t-mems" class="hidden"></div>
+      <div id="t-rems" class="hidden"></div>
+      <div id="t-files" class="hidden"></div>
+      <div id="t-settings" class="hidden"></div>
+    </div>
+
+    <!-- Signups -->
+    <div id="p-signups" class="hidden">
+      <h1>Signups & Activation Codes</h1>
+      <div class="config-box">
+        <h3>Generate Activation Code (Manual)</h3>
+        <div class="row">
+          <input id="genName" placeholder="Name">
+          <input id="genEmail" placeholder="Email (optional)">
+          <input id="genPhone" placeholder="Phone (with country code)">
+          <button class="btn" onclick="genCode()">Generate</button>
+        </div>
+        <div id="genResult" style="margin-top:8px;color:#0af;font-size:13px"></div>
+      </div>
+      <table><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Code</th><th>Status</th><th>Created</th><th>Expires</th></tr></thead>
+      <tbody id="signupsList"></tbody></table>
+    </div>
+
+    <!-- Config -->
+    <div id="p-config" class="hidden">
+      <h1>API Keys & Configuration</h1>
+      <div class="config-box">
+        <h3>Add / Update</h3>
+        <div class="row">
+          <select id="cfgKey">
+            <option value="whatsapp_token">WhatsApp Token</option>
+            <option value="whatsapp_phone_number_id">WhatsApp Phone Number ID</option>
+            <option value="whatsapp_verify_token">WhatsApp Verify Token</option>
+            <option value="whatsapp_app_secret">WhatsApp App Secret</option>
+            <option value="anthropic_api_key">Anthropic API Key</option>
+            <option value="anthropic_model">Anthropic Model</option>
+            <option value="elevenlabs_api_key">ElevenLabs API Key</option>
+            <option value="elevenlabs_voice_id">ElevenLabs Voice ID</option>
+            <option value="smtp_host">SMTP Host</option>
+            <option value="smtp_port">SMTP Port</option>
+            <option value="smtp_user">SMTP User</option>
+            <option value="smtp_pass">SMTP Password</option>
+            <option value="smtp_from">SMTP From Address</option>
+            <option value="custom">Custom Key...</option>
+          </select>
+        </div>
+        <input id="cfgCustom" placeholder="Custom key name" class="hidden">
+        <div class="row">
+          <input id="cfgVal" placeholder="Value">
+          <button class="btn" onclick="saveCfg()">Save</button>
+        </div>
+      </div>
+      <table><thead><tr><th>Key</th><th>Value</th><th>Updated</th><th></th></tr></thead>
+      <tbody id="cfgList"></tbody></table>
+    </div>
+
+    <!-- Usage -->
+    <div id="p-usage" class="hidden">
+      <h1>Token Usage (Last 30 Days)</h1>
+      <table><thead><tr><th>Date</th><th>Requests</th><th>Input Tokens</th><th>Output Tokens</th><th>Total</th></tr></thead>
+      <tbody id="usageList"></tbody></table>
+    </div>
+
+    <!-- Analytics -->
+    <div id="p-analytics" class="hidden">
+      <h1>📊 Analytics</h1>
+      <div id="analyticsContent" style="display:grid;gap:16px"></div>
+    </div>
+
+    <!-- Errors -->
+    <div id="p-errors" class="hidden">
+      <h1>🚨 Error Log</h1>
+      <div id="errorStats" class="grid" style="margin-bottom:1rem"></div>
+      <table><thead><tr><th>Time</th><th>Message</th><th>Context</th></tr></thead>
+      <tbody id="errorsList"></tbody></table>
+    </div>
+
+    <!-- Security / 2FA -->
+    <div id="p-security" class="hidden">
+      <h1>🔐 Security</h1>
+      <div class="config-box">
+        <h3>Two-Factor Authentication (TOTP)</h3>
+        <div id="2faStatus">Loading...</div>
+        <div id="2faSetup" class="hidden" style="margin-top:12px">
+          <p style="color:#888;font-size:13px;margin-bottom:8px">Scan this with your authenticator app (Google Authenticator, Authy, etc):</p>
+          <div style="background:#fff;display:inline-block;padding:8px;border-radius:8px;margin-bottom:8px" id="2faQR"></div>
+          <p style="font-family:monospace;font-size:12px;color:#888;margin:8px 0">Secret: <code id="2faSecret" style="color:#0af;user-select:all"></code></p>
+          <div class="row" style="max-width:400px">
+            <input id="2faCode" placeholder="Enter 6-digit code to verify">
+            <button class="btn" onclick="enable2FA()">Enable 2FA</button>
+          </div>
+        </div>
+      </div>
+      <div class="config-box">
+        <h3>Change Password</h3>
+        <input id="curPass" type="password" placeholder="Current password" style="max-width:400px">
+        <input id="newPass" type="password" placeholder="New password" style="max-width:400px">
+        <button class="btn" onclick="changePass()">Update Password</button>
+        <div id="passMsg" style="margin-top:8px;font-size:13px"></div>
+      </div>
+    </div>
+
+    <!-- Backups -->
+    <div id="p-backups" class="hidden">
+      <h1>💾 Database Backups</h1>
+      <div style="margin-bottom:1rem"><button class="btn" onclick="triggerBackup()">Create Backup Now</button> <span id="backupMsg" style="color:#0af;font-size:13px;margin-left:10px"></span></div>
+      <table><thead><tr><th>Filename</th><th>Size</th><th>Created</th></tr></thead>
+      <tbody id="backupsList"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<script>
+let token=localStorage.getItem('jt'),currentTenant=null;
+const A='/admin/api';
+document.getElementById('cfgKey').onchange=function(){document.getElementById('cfgCustom').classList.toggle('hidden',this.value!=='custom')};
+if(token)showApp();
+
+async function api(p,o={}){
+  const r=await fetch(A+p,{...o,headers:{'Content-Type':'application/json',Authorization:'Bearer '+token,...o.headers}});
+  if(r.status===401){logout();return null}
+  return r.json();
+}
+
+async function login(){
+  const u=document.getElementById('username').value,p=document.getElementById('password').value,t=document.getElementById('totpInput').value;
+  try{
+    const r=await fetch(A+'/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p,totp:t||undefined})});
+    const d=await r.json();
+    if(d.token){token=d.token;localStorage.setItem('jt',token);showApp()}
+    else if(d.requires2FA){document.getElementById('totpInput').style.display='block';document.getElementById('loginErr').textContent='Enter your 2FA code'}
+    else document.getElementById('loginErr').textContent=d.error||'Failed';
+  }catch{document.getElementById('loginErr').textContent='Connection error'}
+}
+
+function logout(){token=null;localStorage.removeItem('jt');location.reload()}
+function showApp(){document.getElementById('loginView').style.display='none';document.getElementById('appView').style.display='block';nav('dash')}
+
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+function nav(p){
+  if(window.innerWidth<=768)toggleSidebar();
+  ['dash','tenants','tenant','signups','config','usage','analytics','errors','backups','security'].forEach(x=>{const e=document.getElementById('p-'+x);if(e)e.classList.add('hidden')});
+  document.querySelectorAll('.sidebar a').forEach(a=>a.classList.remove('active'));
+  const n=document.getElementById('n-'+p);if(n)n.classList.add('active');
+  document.getElementById('p-'+p).classList.remove('hidden');
+  if(p==='dash')loadDash();
+  if(p==='tenants')loadTenants();
+  if(p==='signups')loadSignups();
+  if(p==='config')loadCfg();
+  if(p==='usage')loadUsage();
+  if(p==='analytics')loadAnalytics();
+  if(p==='errors')loadErrors();
+  if(p==='backups')loadBackups();
+  if(p==='security')loadSecurity();
+}
+
+async function loadDash(){
+  const s=await api('/stats');if(!s)return;
+  document.getElementById('statsGrid').innerHTML=`
+    <div class="card"><div class="label">Total Tenants</div><div class="value">${s.tenants}</div></div>
+    <div class="card"><div class="label">Active Today</div><div class="value">${s.active}</div></div>
+    <div class="card"><div class="label">Total Messages</div><div class="value">${s.conversations}</div></div>
+    <div class="card"><div class="label">Memories</div><div class="value">${s.memories}</div></div>
+    <div class="card"><div class="label">Pending Reminders</div><div class="value">${s.reminders}</div></div>
+    <div class="card"><div class="label">Pending Signups</div><div class="value">${s.pendingSignups}</div></div>
+    <div class="card"><div class="label">Tokens Today</div><div class="value">${(s.todayTokens/1000).toFixed(1)}k</div></div>
+    <div class="card"><div class="label">Tokens Total</div><div class="value">${(s.totalTokens/1000).toFixed(1)}k</div></div>`;
+}
+
+async function loadTenants(){
+  const t=await api('/tenants');if(!t)return;
+  document.getElementById('tenantsList').innerHTML=t.map(u=>`
+    <tr onclick="showTenant(${u.id})">
+      <td>${u.id}</td><td>${u.phone}</td><td>${u.name||'-'}</td>
+      <td><span class="badge ${u.status==='active'?'b-green':'b-red'}">${u.status}</span></td>
+      <td>${u.message_count}</td><td>${u.memory_count}</td>
+      <td>${new Date(u.last_active).toLocaleString()}</td>
+    </tr>`).join('');
+}
+
+async function showTenant(id){
+  const t=await api('/tenants/'+id);if(!t)return;
+  currentTenant=t;
+  ['dash','tenants','config','usage'].forEach(x=>document.getElementById('p-'+x).classList.add('hidden'));
+  document.getElementById('p-tenant').classList.remove('hidden');
+  document.getElementById('tenantTitle').textContent=`${t.display_name||t.name||'Unknown'} — ${t.phone}`;
+  document.getElementById('tenantStats').innerHTML=`
+    <div class="card"><div class="label">Messages</div><div class="value">${t.message_count}</div></div>
+    <div class="card"><div class="label">Memories</div><div class="value">${t.memory_count}</div></div>
+    <div class="card"><div class="label">Tokens Used</div><div class="value">${((t.usage.input+t.usage.output)/1000).toFixed(1)}k</div></div>
+    <div class="card"><div class="label">Model</div><div class="value" style="font-size:13px">${t.model}</div></div>`;
+  tenantTab('convo',document.querySelector('.tab'));
+}
+
+function tenantTab(tab,el){
+  ['convo','mems','rems','files','settings'].forEach(x=>document.getElementById('t-'+x).classList.add('hidden'));
+  document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('t-'+tab).classList.remove('hidden');
+  const t=currentTenant;if(!t)return;
+
+  if(tab==='convo'){
+    let h='<div class="convo">';
+    t.conversations.slice().reverse().forEach(c=>{
+      h+=`<div class="msg ${c.role}"><div>${esc(c.content)}</div><div class="ts">${new Date(c.created_at).toLocaleString()}</div></div>`;
+    });
+    document.getElementById('t-convo').innerHTML=h+'</div>';
+  }
+  if(tab==='mems'){
+    let h='<table><thead><tr><th>Content</th><th>Category</th><th>Date</th></tr></thead><tbody>';
+    t.memories.forEach(m=>{h+=`<tr><td>${esc(m.content)}</td><td><span class="badge b-green">${m.category}</span></td><td>${new Date(m.created_at).toLocaleDateString()}</td></tr>`});
+    document.getElementById('t-mems').innerHTML=h+'</tbody></table>';
+  }
+  if(tab==='rems'){
+    let h='<table><thead><tr><th>Content</th><th>Due</th><th>Status</th></tr></thead><tbody>';
+    t.reminders.forEach(r=>{
+      const s=r.sent?'<span class="badge b-green">Sent</span>':'<span class="badge b-yellow">Pending</span>';
+      h+=`<tr><td>${esc(r.content)}</td><td>${new Date(r.remind_at).toLocaleString()}</td><td>${s}</td></tr>`;
+    });
+    document.getElementById('t-rems').innerHTML=h+'</tbody></table>';
+  }
+  if(tab==='files'){
+    document.getElementById('t-files').innerHTML=`
+      <div class="config-box"><h3>SOUL.md (Personality)</h3><textarea id="fileSoul">${esc(t.soul||'')}</textarea><button class="btn btn-sm" onclick="saveFiles()">Save Files</button></div>
+      <div class="config-box"><h3>MEMORY.md (Long-term Memory)</h3><textarea id="fileMemory">${esc(t.memory||'')}</textarea></div>`;
+  }
+  if(tab==='settings'){
+    document.getElementById('t-settings').innerHTML=`
+      <div class="config-box">
+        <h3>Tenant Settings</h3>
+        <label style="color:#888;font-size:12px">Display Name</label>
+        <input id="setName" value="${t.display_name||t.name||''}">
+        <label style="color:#888;font-size:12px">Model</label>
+        <input id="setModel" value="${t.model||''}">
+        <label style="color:#888;font-size:12px">Max Tokens</label>
+        <input id="setMaxTok" type="number" value="${t.max_tokens||4096}">
+        <label style="color:#888;font-size:12px">Status</label>
+        <select id="setStatus"><option ${t.status==='active'?'selected':''}>active</option><option ${t.status==='suspended'?'selected':''}>suspended</option><option ${t.status==='banned'?'selected':''}>banned</option></select>
+        <br><button class="btn" onclick="saveTenant()">Save Settings</button>
+      </div>`;
+  }
+}
+
+async function saveFiles(){
+  await api('/tenants/'+currentTenant.id+'/files',{method:'PUT',body:JSON.stringify({
+    soul:document.getElementById('fileSoul').value,
+    memory:document.getElementById('fileMemory').value
+  })});
+  alert('Files saved');
+}
+
+async function saveTenant(){
+  await api('/tenants/'+currentTenant.id,{method:'PUT',body:JSON.stringify({
+    display_name:document.getElementById('setName').value,
+    model:document.getElementById('setModel').value,
+    max_tokens:parseInt(document.getElementById('setMaxTok').value),
+    status:document.getElementById('setStatus').value
+  })});
+  alert('Settings saved');
+}
+
+async function loadCfg(){
+  const c=await api('/config');if(!c)return;
+  document.getElementById('cfgList').innerHTML=c.map(x=>`
+    <tr><td><strong>${x.key}</strong></td><td style="font-family:monospace;font-size:12px">${x.display_value}</td>
+    <td>${new Date(x.updated_at).toLocaleString()}</td>
+    <td><button class="btn btn-danger btn-sm" onclick="delCfg('${x.key}')">Delete</button></td></tr>`).join('');
+}
+
+async function saveCfg(){
+  const sel=document.getElementById('cfgKey');
+  const k=sel.value==='custom'?document.getElementById('cfgCustom').value:sel.value;
+  const v=document.getElementById('cfgVal').value;
+  if(!k||!v)return alert('Key and value required');
+  await api('/config',{method:'PUT',body:JSON.stringify({key:k,value:v})});
+  document.getElementById('cfgVal').value='';loadCfg();
+}
+
+async function delCfg(k){if(!confirm('Delete '+k+'?'))return;await api('/config/'+k,{method:'DELETE'});loadCfg()}
+
+async function loadUsage(){
+  const u=await api('/usage');if(!u)return;
+  document.getElementById('usageList').innerHTML=u.map(d=>`
+    <tr><td>${d.day}</td><td>${d.requests}</td><td>${d.input.toLocaleString()}</td><td>${d.output.toLocaleString()}</td><td>${(d.input+d.output).toLocaleString()}</td></tr>`).join('');
+}
+
+async function loadSignups(){
+  const s=await api('/signups');if(!s)return;
+  document.getElementById('signupsList').innerHTML=s.map(x=>{
+    const expired=new Date(x.expires_at)<new Date();
+    const st=x.status==='activated'?'b-green':expired?'b-red':'b-yellow';
+    const label=x.status==='activated'?'Activated':expired?'Expired':'Pending';
+    return `<tr><td>${x.id}</td><td>${esc(x.name)}</td><td>${esc(x.email)}</td><td>${x.phone}</td>
+    <td style="font-family:monospace;font-weight:700;letter-spacing:2px">${x.activation_code}</td>
+    <td><span class="badge ${st}">${label}</span></td>
+    <td>${new Date(x.created_at).toLocaleString()}</td><td>${new Date(x.expires_at).toLocaleString()}</td></tr>`;
+  }).join('');
+}
+
+async function genCode(){
+  const name=document.getElementById('genName').value;
+  const email=document.getElementById('genEmail').value;
+  const phone=document.getElementById('genPhone').value;
+  if(!name||!phone)return alert('Name and phone required');
+  const r=await api('/signups/generate',{method:'POST',body:JSON.stringify({name,email,phone})});
+  if(r&&r.code){
+    document.getElementById('genResult').textContent='Code: '+r.code+' (expires: '+new Date(r.expires_at).toLocaleString()+')';
+    document.getElementById('genName').value='';document.getElementById('genEmail').value='';document.getElementById('genPhone').value='';
+    loadSignups();
+  }
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}
+
+async function loadAnalytics(){
+  const d=await api('/analytics');if(!d)return;
+  const el=document.getElementById('analyticsContent');
+  
+  // SVG bar chart helper
+  function barChart(data, width=600, height=200){
+    if(!data.length)return '<p style="color:#666">No data</p>';
+    const max=Math.max(...data.map(d=>d.count),1);
+    const bw=Math.max(4,Math.min(20,(width-40)/data.length-2));
+    const bars=data.map((d,i)=>{
+      const h=(d.count/max)*(height-40);
+      const x=30+i*(bw+2);
+      return `<rect x="${x}" y="${height-20-h}" width="${bw}" height="${h}" fill="#0af" rx="2"><title>${d.day}: ${d.count}</title></rect>`;
+    }).join('');
+    return `<svg width="${width}" height="${height}" style="background:rgba(0,20,40,0.6);border-radius:8px;padding:4px">
+      <text x="4" y="14" fill="#666" font-size="10">${max}</text>
+      <line x1="28" y1="0" x2="28" y2="${height-20}" stroke="#333"/>
+      <line x1="28" y1="${height-20}" x2="${width}" y2="${height-20}" stroke="#333"/>
+      ${bars}
+    </svg>`;
+  }
+
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">
+      <div class="card"><div class="label">Total Users</div><div class="value">${d.totalUsers}</div></div>
+      <div class="card"><div class="label">7d Retention</div><div class="value">${d.retention7d}%</div></div>
+      <div class="card"><div class="label">30d Retention</div><div class="value">${d.retention30d}%</div></div>
+      <div class="card"><div class="label">MRR</div><div class="value">$${d.revenue}</div></div>
+    </div>
+    <div style="background:rgba(0,20,40,0.6);padding:16px;border-radius:10px">
+      <h3 style="color:#0af;margin-bottom:8px">Message Volume (30 days)</h3>
+      ${barChart(d.messageVolume)}
+    </div>
+    <div style="background:rgba(0,20,40,0.6);padding:16px;border-radius:10px">
+      <h3 style="color:#0af;margin-bottom:8px">Plan Distribution</h3>
+      ${d.planCounts.map(p=>`<span style="display:inline-block;margin:4px 8px;padding:4px 12px;background:rgba(0,5,15,0.9);border-radius:6px">${p.plan||'free'}: <b>${p.count}</b></span>`).join('')}
+    </div>
+    <div style="background:rgba(0,20,40,0.6);padding:16px;border-radius:10px">
+      <h3 style="color:#0af;margin-bottom:8px">Top Users</h3>
+      <table><thead><tr><th>Name</th><th>Phone</th><th>Messages</th><th>Plan</th><th>Last Active</th></tr></thead>
+      <tbody>${d.topUsers.map(u=>`<tr><td>${esc(u.name)}</td><td>${u.phone}</td><td>${u.message_count}</td><td>${u.plan||'free'}</td><td>${u.last_active?new Date(u.last_active).toLocaleDateString():'-'}</td></tr>`).join('')}</tbody></table>
+    </div>
+    <div style="background:rgba(0,20,40,0.6);padding:16px;border-radius:10px">
+      <h3 style="color:#0af;margin-bottom:8px">Token Cost per User (Top 20)</h3>
+      <table><thead><tr><th>Name</th><th>Phone</th><th>Total Tokens</th><th>Est. Cost</th></tr></thead>
+      <tbody>${d.costPerUser.map(u=>`<tr><td>${esc(u.name)}</td><td>${u.phone}</td><td>${u.total_tokens.toLocaleString()}</td><td>$${(u.total_tokens/1000*0.003).toFixed(2)}</td></tr>`).join('')}</tbody></table>
+    </div>`;
+}
+
+async function loadErrors(){
+  const d=await api('/errors');if(!d)return;
+  const counts=Object.entries(d.hourlyCounts||{}).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,6);
+  document.getElementById('errorStats').innerHTML=counts.map(([h,c])=>
+    `<div class="card"><div class="label">${h.slice(5)}</div><div class="value" style="color:#ff6b6b">${c}</div></div>`
+  ).join('')||'<div class="card"><div class="label">Errors</div><div class="value" style="color:#0af">0</div><div class="sub">All clear!</div></div>';
+  document.getElementById('errorsList').innerHTML=(d.errors||[]).map(e=>
+    `<tr><td style="white-space:nowrap;font-size:12px">${e.timestamp?new Date(e.timestamp).toLocaleString():'-'}</td>
+    <td style="color:#ff6b6b">${esc(e.message)}</td>
+    <td style="font-size:11px;color:#666">${esc(JSON.stringify(e.context||{}))}</td></tr>`
+  ).join('')||'<tr><td colspan="3" style="text-align:center;color:#666">No errors recorded</td></tr>';
+}
+
+async function loadBackups(){
+  const d=await api('/backups');if(!d)return;
+  document.getElementById('backupsList').innerHTML=d.map(b=>
+    `<tr><td style="font-family:monospace;font-size:12px">${esc(b.filename)}</td><td>${b.sizeHuman}</td><td>${new Date(b.created).toLocaleString()}</td></tr>`
+  ).join('')||'<tr><td colspan="3" style="text-align:center;color:#666">No backups yet</td></tr>';
+}
+
+async function triggerBackup(){
+  document.getElementById('backupMsg').textContent='Creating...';
+  const r=await api('/backups/now',{method:'POST'});
+  if(r&&r.success){document.getElementById('backupMsg').textContent='✅ '+r.filename;loadBackups()}
+  else document.getElementById('backupMsg').textContent='❌ Failed';
+}
+
+let tfaSecret='';
+async function loadSecurity(){
+  const s=await api('/2fa/status');if(!s)return;
+  const el=document.getElementById('2faStatus');
+  const setup=document.getElementById('2faSetup');
+  if(s.enabled){
+    el.innerHTML='<span class="badge b-green">2FA Enabled</span> <button class="btn btn-danger btn-sm" style="margin-left:8px" onclick="disable2FA()">Disable 2FA</button>';
+    setup.classList.add('hidden');
+  }else{
+    el.innerHTML='<span class="badge b-yellow">2FA Not Enabled</span> <button class="btn btn-sm" style="margin-left:8px" onclick="setup2FA()">Set Up 2FA</button>';
+    setup.classList.add('hidden');
+  }
+}
+async function setup2FA(){
+  const r=await api('/2fa/setup');if(!r)return;
+  tfaSecret=r.secret;
+  document.getElementById('2faSecret').textContent=r.secret;
+  // Simple text-based display since we can't render QR client-side easily
+  document.getElementById('2faQR').innerHTML='<p style="color:#000;font-size:12px;max-width:280px;word-break:break-all">'+r.uri+'</p>';
+  document.getElementById('2faSetup').classList.remove('hidden');
+}
+async function enable2FA(){
+  const code=document.getElementById('2faCode').value;
+  if(!code||!tfaSecret)return;
+  const r=await api('/2fa/enable',{method:'POST',body:JSON.stringify({secret:tfaSecret,code})});
+  if(r&&r.success){alert('2FA enabled!');loadSecurity()}
+  else alert(r?.error||'Failed to enable 2FA');
+}
+async function disable2FA(){
+  if(!confirm('Disable 2FA?'))return;
+  await api('/2fa/disable',{method:'POST',body:'{}'});
+  loadSecurity();
+}
+async function changePass(){
+  const cur=document.getElementById('curPass').value;
+  const nw=document.getElementById('newPass').value;
+  if(!cur||!nw)return;
+  const r=await api('/password',{method:'PUT',body:JSON.stringify({currentPassword:cur,newPassword:nw})});
+  document.getElementById('passMsg').textContent=r&&r.success?'✅ Password updated':'❌ '+(r?.error||'Failed');
+  if(r&&r.success){document.getElementById('curPass').value='';document.getElementById('newPass').value='';}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>J.A.R.V.I.S. — Your Personal AI Assistant</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+    
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --arc-blue:#0af;--arc-gold:#f0c040;--arc-cyan:#00e5ff;--arc-dark:#020a18;
+      --arc-panel:rgba(0,170,255,0.04);--arc-border:rgba(0,170,255,0.15);
+      --arc-glow:0 0 20px rgba(0,170,255,0.3),0 0 60px rgba(0,170,255,0.1);
+      --text-primary:#c8dce8;--text-dim:#4a6a80;
+    }
+    body{font-family:'Rajdhani',sans-serif;background:var(--arc-dark);color:var(--text-primary);overflow-x:hidden;letter-spacing:0.3px}
+    
+    /* Animated background */
+    .bg-grid{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;
+      background-image:
+        linear-gradient(rgba(0,170,255,0.03) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(0,170,255,0.03) 1px,transparent 1px);
+      background-size:60px 60px;
+    }
+    .bg-arc{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:800px;height:800px;pointer-events:none;z-index:0;
+      background:radial-gradient(circle,rgba(0,170,255,0.06) 0%,rgba(0,170,255,0.02) 30%,transparent 70%);
+      animation:pulse 8s ease-in-out infinite;
+    }
+    @keyframes pulse{0%,100%{opacity:0.6;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}}
+    
+    .content{position:relative;z-index:1}
+    
+    /* HUD corners */
+    .hud-corner{position:fixed;width:60px;height:60px;pointer-events:none;z-index:2}
+    .hud-corner::before,.hud-corner::after{content:'';position:absolute;background:var(--arc-blue);opacity:0.3}
+    .hud-tl{top:20px;left:20px}.hud-tl::before{top:0;left:0;width:30px;height:2px}.hud-tl::after{top:0;left:0;width:2px;height:30px}
+    .hud-tr{top:20px;right:20px}.hud-tr::before{top:0;right:0;width:30px;height:2px}.hud-tr::after{top:0;right:0;width:2px;height:30px}
+    .hud-bl{bottom:20px;left:20px}.hud-bl::before{bottom:0;left:0;width:30px;height:2px}.hud-bl::after{bottom:0;left:0;width:2px;height:30px}
+    .hud-br{bottom:20px;right:20px}.hud-br::before{bottom:0;right:0;width:30px;height:2px}.hud-br::after{bottom:0;right:0;width:2px;height:30px}
+    
+    /* Hero */
+    .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;position:relative}
+    
+    .arc-reactor{width:160px;height:160px;border-radius:50%;position:relative;margin-bottom:2rem;animation:reactor-spin 20s linear infinite}
+    .arc-reactor::before{content:'';position:absolute;inset:0;border-radius:50%;border:2px solid rgba(120,200,255,0.6);box-shadow:0 0 15px rgba(120,200,255,0.4),0 0 40px rgba(80,180,255,0.3),0 0 80px rgba(50,160,255,0.2),0 0 120px rgba(30,140,255,0.1)}
+    .arc-reactor::after{content:'';position:absolute;inset:18px;border-radius:50%;border:1.5px solid rgba(150,220,255,0.4);box-shadow:0 0 10px rgba(120,200,255,0.2),inset 0 0 10px rgba(120,200,255,0.1)}
+    .arc-core{position:absolute;inset:35px;border-radius:50%;background:radial-gradient(circle,rgba(200,235,255,0.7) 0%,rgba(120,200,255,0.5) 30%,rgba(60,170,255,0.3) 55%,rgba(30,140,255,0.1) 75%,transparent 100%);box-shadow:0 0 30px rgba(150,215,255,0.6),0 0 60px rgba(100,190,255,0.4),0 0 100px rgba(60,170,255,0.25),0 0 150px rgba(40,150,255,0.15),inset 0 0 25px rgba(180,225,255,0.4);animation:core-pulse 3s ease-in-out infinite}
+    .arc-core::after{content:'';position:absolute;inset:15px;border-radius:50%;background:radial-gradient(circle,rgba(220,240,255,0.9) 0%,rgba(180,225,255,0.5) 40%,transparent 70%);box-shadow:0 0 20px rgba(200,235,255,0.5)}
+    .arc-ring{position:absolute;inset:5px;border-radius:50%;border:1px dashed rgba(120,200,255,0.25);animation:reactor-spin-reverse 15s linear infinite}
+    .arc-ring2{position:absolute;inset:25px;border-radius:50%;border:1px solid transparent;border-top:1px solid rgba(150,220,255,0.3);border-bottom:1px solid rgba(150,220,255,0.3);animation:reactor-spin 8s linear infinite}
+    /* Outer ambient glow */
+    .arc-reactor-glow{position:absolute;top:50%;left:50%;width:300px;height:300px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(80,180,255,0.08) 0%,rgba(50,160,255,0.04) 40%,transparent 70%);pointer-events:none;animation:glow-breathe 4s ease-in-out infinite}
+    @keyframes reactor-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+    @keyframes reactor-spin-reverse{from{transform:rotate(360deg)}to{transform:rotate(0deg)}}
+    @keyframes core-pulse{0%,100%{opacity:0.85;transform:scale(1)}50%{opacity:1;transform:scale(1.04)}}
+    @keyframes glow-breathe{0%,100%{opacity:0.6;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}}
+    
+    .hero-label{font-family:'Orbitron',monospace;font-size:0.75rem;letter-spacing:6px;color:var(--arc-blue);text-transform:uppercase;margin-bottom:0.5rem;opacity:0.7}
+    .hero h1{font-family:'Orbitron',monospace;font-size:clamp(2.2rem,6vw,4rem);font-weight:800;line-height:1.1;margin-bottom:0.5rem;color:#fff;text-shadow:0 0 40px rgba(0,170,255,0.3)}
+    .hero h1 span{color:var(--arc-blue)}
+    .hero .tagline{font-size:1.2rem;color:var(--text-dim);max-width:550px;margin-bottom:2.5rem;line-height:1.7;font-weight:300}
+    
+    .cta-btn{display:inline-block;padding:16px 40px;border:1px solid var(--arc-blue);color:var(--arc-blue);font-family:'Orbitron',monospace;font-size:0.85rem;letter-spacing:3px;text-transform:uppercase;text-decoration:none;position:relative;overflow:hidden;transition:all 0.4s;cursor:pointer;background:transparent}
+    .cta-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,170,255,0.1),rgba(0,229,255,0.05));opacity:0;transition:opacity 0.4s}
+    .cta-btn:hover{color:#fff;border-color:var(--arc-cyan);box-shadow:var(--arc-glow);text-shadow:0 0 10px rgba(0,170,255,0.5)}
+    .cta-btn:hover::before{opacity:1}
+    
+    .hero-sub{margin-top:1.5rem;font-size:0.8rem;color:var(--text-dim);letter-spacing:1px}
+    
+    /* Section divider */
+    .divider{width:200px;height:1px;margin:0 auto;background:linear-gradient(90deg,transparent,var(--arc-blue),transparent);opacity:0.3}
+    
+    /* Features */
+    .section{padding:5rem 2rem}
+    .section-title{font-family:'Orbitron',monospace;text-align:center;font-size:1.6rem;margin-bottom:0.5rem;color:#fff;letter-spacing:2px}
+    .section-sub{text-align:center;color:var(--text-dim);margin-bottom:3rem;font-size:0.9rem}
+    
+    .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;max-width:960px;margin:0 auto}
+    .feat{background:var(--arc-panel);border:1px solid var(--arc-border);padding:2rem;position:relative;overflow:hidden;transition:all 0.3s}
+    .feat::before{content:'';position:absolute;top:0;left:0;width:40px;height:2px;background:var(--arc-blue);transition:width 0.3s}
+    .feat::after{content:'';position:absolute;top:0;left:0;width:2px;height:40px;background:var(--arc-blue);transition:height 0.3s}
+    .feat:hover{border-color:rgba(0,170,255,0.3);box-shadow:0 0 30px rgba(0,170,255,0.05)}
+    .feat:hover::before{width:100%}.feat:hover::after{height:100%}
+    .feat .icon{font-size:1.8rem;margin-bottom:0.8rem}
+    .feat h3{font-family:'Orbitron',monospace;font-size:0.85rem;letter-spacing:2px;color:var(--arc-blue);margin-bottom:0.5rem;text-transform:uppercase}
+    .feat p{font-size:0.9rem;color:var(--text-dim);line-height:1.6}
+    
+    /* How it works */
+    .steps{max-width:600px;margin:0 auto}
+    .step{display:flex;align-items:flex-start;gap:1.5rem;margin-bottom:2rem;position:relative}
+    .step-num{flex-shrink:0;width:50px;height:50px;border:1px solid var(--arc-blue);display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:1.2rem;font-weight:700;color:var(--arc-blue);position:relative}
+    .step-num::after{content:'';position:absolute;bottom:-30px;left:50%;width:1px;height:28px;background:linear-gradient(to bottom,var(--arc-blue),transparent);opacity:0.3}
+    .step:last-child .step-num::after{display:none}
+    .step-text h3{font-family:'Orbitron',monospace;font-size:0.85rem;letter-spacing:1px;margin-bottom:4px;color:#fff}
+    .step-text p{font-size:0.9rem;color:var(--text-dim);line-height:1.6}
+    
+    /* Sign up */
+    .signup-section{max-width:480px;margin:0 auto;padding:0 2rem 5rem}
+    .form-box{background:var(--arc-panel);border:1px solid var(--arc-border);padding:2rem;position:relative}
+    .form-box::before{content:'REGISTRATION PROTOCOL';position:absolute;top:-10px;left:20px;font-family:'Orbitron',monospace;font-size:0.6rem;letter-spacing:3px;color:var(--arc-blue);background:var(--arc-dark);padding:0 8px;opacity:0.7}
+    .form-box input{width:100%;padding:14px 16px;margin-bottom:12px;background:rgba(0,10,25,0.8);border:1px solid rgba(0,170,255,0.15);color:var(--text-primary);font-size:14px;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:border 0.3s}
+    .form-box input:focus{outline:none;border-color:var(--arc-blue);box-shadow:0 0 10px rgba(0,170,255,0.1)}
+    .form-box input::placeholder{color:var(--text-dim)}
+    .phone-hint{font-size:0.7rem;color:var(--text-dim);margin:-8px 0 12px 2px;font-family:'Orbitron',monospace;letter-spacing:1px}
+    .form-box .submit-btn{width:100%;padding:14px;background:transparent;border:1px solid var(--arc-blue);color:var(--arc-blue);font-family:'Orbitron',monospace;font-size:0.8rem;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:all 0.3s;position:relative;overflow:hidden}
+    .form-box .submit-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,170,255,0.15),rgba(0,229,255,0.05));opacity:0;transition:opacity 0.3s}
+    .form-box .submit-btn:hover{color:#fff;box-shadow:var(--arc-glow)}
+    .form-box .submit-btn:hover::before{opacity:1}
+    .form-box .submit-btn:disabled{opacity:0.4;cursor:not-allowed}
+    .error{color:#ff4444;text-align:center;margin-top:10px;font-size:0.8rem;font-family:'Orbitron',monospace;letter-spacing:1px}
+    
+    .success-msg{display:none;text-align:center;padding:2rem 0}
+    .success-msg .status{font-family:'Orbitron',monospace;font-size:0.7rem;letter-spacing:4px;color:var(--arc-blue);text-transform:uppercase;margin-bottom:0.5rem}
+    .success-msg .label{font-size:1rem;color:var(--text-dim);margin-bottom:0.5rem}
+    .success-msg .code{font-family:'Orbitron',monospace;font-size:3rem;font-weight:900;color:var(--arc-cyan);letter-spacing:12px;margin:1rem 0;text-shadow:0 0 30px rgba(0,229,255,0.4)}
+    .success-msg p{color:var(--text-dim);font-size:0.9rem;line-height:1.6}
+    .wa-btn{display:inline-block;margin-top:1.5rem;padding:14px 28px;background:#25D366;color:#fff;text-decoration:none;font-family:'Orbitron',monospace;font-size:0.75rem;letter-spacing:2px;text-transform:uppercase;transition:all 0.3s}
+    .wa-btn:hover{box-shadow:0 0 20px rgba(37,211,102,0.3)}
+    
+    /* Scanning line animation */
+    .scan-line{position:fixed;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,var(--arc-blue),transparent);opacity:0.1;animation:scan 6s linear infinite;pointer-events:none;z-index:3}
+    @keyframes scan{0%{top:0}100%{top:100vh}}
+    
+    /* Footer */
+    .footer{text-align:center;padding:2rem;color:var(--text-dim);font-size:0.75rem;border-top:1px solid var(--arc-border);font-family:'Orbitron',monospace;letter-spacing:2px}
+    
+    /* QR Section */
+    .qr-section{text-align:center;padding:3rem 2rem}
+    .qr-section .qr-container{display:inline-block;background:rgba(255,255,255,0.05);border:1px solid var(--arc-border);padding:2rem;margin-top:1rem}
+    .qr-section .qr-container svg{display:block;margin:0 auto}
+    .qr-section .qr-label{font-family:'Orbitron',monospace;font-size:0.7rem;letter-spacing:3px;color:var(--arc-blue);margin-top:1rem;text-transform:uppercase}
+
+    @media(max-width:768px){
+      .features{grid-template-columns:1fr}
+      .hero{padding:1.5rem}
+      .hero h1{font-size:2rem}
+      .hero .tagline{font-size:1rem}
+      .hud-corner{display:none}
+      .cta-btn{width:100%;text-align:center;padding:14px 20px}
+      .section{padding:3rem 1rem}
+      .section-title{font-size:1.2rem}
+      .signup-section{padding:0 1rem 3rem}
+      .step{gap:1rem}
+      .feat{padding:1.5rem}
+      .form-box{padding:1.5rem}
+      .form-box input{padding:12px}
+      .bg-arc{width:400px;height:400px}
+    }
+    @media(max-width:380px){
+      .hero h1{font-size:1.6rem}
+      .hero-label{font-size:0.6rem;letter-spacing:3px}
+      .step-num{width:40px;height:40px;font-size:1rem}
+      .form-box::before{font-size:0.5rem;letter-spacing:2px}
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-arc"></div>
+<div class="scan-line"></div>
+<div class="hud-corner hud-tl"></div>
+<div class="hud-corner hud-tr"></div>
+<div class="hud-corner hud-bl"></div>
+<div class="hud-corner hud-br"></div>
+
+<div class="content">
+
+<section class="hero">
+  <div style="position:relative;display:flex;align-items:center;justify-content:center">
+    <div class="arc-reactor-glow"></div>
+    <div class="arc-reactor">
+      <div class="arc-ring"></div>
+      <div class="arc-ring2"></div>
+      <div class="arc-core"></div>
+    </div>
+  </div>
+  <div class="hero-label">// Artificial Intelligence System</div>
+  <h1><span>J.A.R.V.I.S.</span></h1>
+  <p class="tagline">Your personal AI assistant — always listening, always remembering, always ready. Accessible through a simple WhatsApp message.</p>
+  <a href="#signup" class="cta-btn">Initialize Protocol →</a>
+  <div class="hero-sub">No downloads required. WhatsApp is your interface.</div>
+</section>
+
+<div class="divider"></div>
+
+<section class="section">
+  <div class="section-title">System Capabilities</div>
+  <div class="section-sub">// Core modules online</div>
+  <div class="features">
+    <div class="feat">
+      <div class="icon">◈</div>
+      <h3>Total Recall</h3>
+      <p>Tell Jarvis anything — names, ideas, conversations, recipes, passwords. Ask for it weeks later in plain English. Nothing is ever forgotten.</p>
+    </div>
+    <div class="feat">
+      <div class="icon">◉</div>
+      <h3>Smart Reminders</h3>
+      <p>"Remind me to renew my passport next Tuesday." "Ping me about the meeting in 2 hours." Natural language, perfect timing, never missed.</p>
+    </div>
+    <div class="feat">
+      <div class="icon">◇</div>
+      <h3>Daily Briefing</h3>
+      <p>Wake up to a summary of your day — pending tasks, upcoming reminders, things you asked Jarvis to track. Your personal morning report.</p>
+    </div>
+    <div class="feat">
+      <div class="icon">◆</div>
+      <h3>Draft & Execute</h3>
+      <p>Draft emails, write messages, brainstorm ideas, plan projects. Jarvis doesn't just remember — it thinks, writes, and creates alongside you.</p>
+    </div>
+    <div class="feat">
+      <div class="icon">◎</div>
+      <h3>Your Private Workspace</h3>
+      <p>Every user gets their own isolated AI instance with its own memory, personality, and files. Your data never touches another user's space.</p>
+    </div>
+    <div class="feat">
+      <div class="icon">◐</div>
+      <h3>Lists & Organization</h3>
+      <p>Shopping lists, reading lists, project tasks, bucket lists — Jarvis categorizes everything automatically. Just tell it what to track.</p>
+    </div>
+    <div class="feat">
+      <div class="icon">◒</div>
+      <h3>Long-Term Memory</h3>
+      <p>Jarvis learns who you are over time. Your preferences, your habits, your people. The more you use it, the more it anticipates your needs.</p>
+    </div>
+    <div class="feat">
+      <div class="icon">◑</div>
+      <h3>Always On WhatsApp</h3>
+      <p>No app to download. No account to log into. Just open WhatsApp and talk to Jarvis like you'd text a friend. Available 24/7, anywhere.</p>
+    </div>
+    <div class="feat">
+      <div class="icon">◓</div>
+      <h3>Proactive Assistant</h3>
+      <p>Jarvis doesn't wait to be asked. It nudges you about forgotten tasks, follows up on things you mentioned, and keeps your life on track.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section class="section">
+  <div class="section-title">Activation Sequence</div>
+  <div class="section-sub">// Three steps to initialize</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-text">
+        <h3>Register Below</h3>
+        <p>Provide your name, email, and WhatsApp number. Your credentials are encrypted and stored securely.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-text">
+        <h3>Receive Activation Code</h3>
+        <p>A 6-digit authorization code is generated instantly. This is your key to initialize your Jarvis instance.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-text">
+        <h3>Transmit Code via WhatsApp</h3>
+        <p>Send the code to our WhatsApp number. Your personal workspace is provisioned and Jarvis comes online.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section class="signup-section section" id="signup">
+  <div class="section-title">Begin Registration</div>
+  <div class="section-sub">// Authorization required</div>
+  <div class="form-box">
+    <div id="formFields">
+      <input id="regName" placeholder="FULL NAME" autocomplete="name">
+      <input id="regEmail" type="email" placeholder="EMAIL ADDRESS" autocomplete="email">
+      <input id="regPhone" type="tel" placeholder="WHATSAPP NUMBER (+1 868 123 4567)" autocomplete="tel">
+      <div class="phone-hint">// Include country code</div>
+      <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:12px;text-align:center;line-height:1.5">By signing up you agree to our <a href="/terms.html" style="color:var(--arc-blue)">Terms of Service</a> and <a href="/privacy.html" style="color:var(--arc-blue)">Privacy Policy</a>.</div>
+      <button class="submit-btn" id="regBtn" onclick="register()">Generate Access Code →</button>
+      <div class="error" id="regErr"></div>
+    </div>
+    <div class="success-msg" id="successMsg">
+      <div class="status">// Authorization Granted</div>
+      <div class="label">Your activation code:</div>
+      <div class="code" id="activationCode"></div>
+      <p>Send this code to our WhatsApp number to bring your Jarvis instance online:</p>
+      <div id="waNumberDisplay" style="font-family:'Orbitron',monospace;font-size:1.2rem;color:#0af;margin:0.5rem 0;letter-spacing:2px"></div>
+      <a class="wa-btn" id="waLink" href="#" target="_blank">◈ Open WhatsApp & Send Code</a>
+      <p style="margin-top:1.5rem;font-size:0.7rem;font-family:'Orbitron',monospace;letter-spacing:2px;color:#4a6a80">Code expires in 24 hours</p>
+      <p style="margin-top:0.5rem"><a href="#" onclick="showResend();return false" style="color:#0af;font-size:0.75rem;font-family:'Orbitron',monospace;letter-spacing:1px">Lost your code? Resend it</a></p>
+    </div>
+    <div id="resendForm" style="display:none;text-align:center;padding:1rem 0">
+      <div class="status">// Code Recovery</div>
+      <input id="resendPhone" type="tel" placeholder="WHATSAPP NUMBER" style="margin-top:1rem">
+      <button class="submit-btn" onclick="resendCode()" style="margin-top:0.5rem">Resend Code →</button>
+      <div class="error" id="resendErr"></div>
+    </div>
+  </div>
+</section>
+
+<section class="qr-section" id="qrSection" style="display:none">
+  <div class="divider" style="margin-bottom:3rem"></div>
+  <div class="section-title">Scan to Chat</div>
+  <div class="section-sub">// Direct WhatsApp connection</div>
+  <div class="qr-container" id="qrContainer"></div>
+</section>
+
+<footer class="footer">
+  <p style="margin-bottom:0.5rem"><a href="/terms.html" style="color:var(--text-dim);text-decoration:none;margin:0 1rem">Terms of Service</a> <a href="/privacy.html" style="color:var(--text-dim);text-decoration:none;margin:0 1rem">Privacy Policy</a></p>
+  <p>J.A.R.V.I.S. // Just A Rather Very Intelligent System</p>
+</footer>
+
+</div>
+
+<script>
+// Load QR code
+fetch('/api/qr').then(r=>{if(r.ok)return r.text();throw 0}).then(svg=>{
+  document.getElementById('qrContainer').innerHTML=svg+'<div class="qr-label">Open WhatsApp Camera</div>';
+  document.getElementById('qrSection').style.display='block';
+}).catch(()=>{});
+
+let waNumber='';
+// Fetch WhatsApp number on page load
+fetch('/api/whatsapp-number').then(r=>r.json()).then(d=>{if(d.number)waNumber=d.number.replace(/[^\d]/g,'')}).catch(()=>{});
+
+function showResend(){
+  document.getElementById('formFields').style.display='none';
+  document.getElementById('successMsg').style.display='none';
+  document.getElementById('resendForm').style.display='block';
+}
+
+async function resendCode(){
+  const phone=document.getElementById('resendPhone').value.trim();
+  const err=document.getElementById('resendErr');
+  err.textContent='';
+  if(!phone){err.textContent='// PHONE REQUIRED';return}
+  try{
+    const res=await fetch('/api/resend',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone})});
+    const data=await res.json();
+    if(data.success){
+      document.getElementById('resendForm').style.display='none';
+      document.getElementById('successMsg').style.display='block';
+      document.getElementById('activationCode').textContent=data.activation_code;
+      if(waNumber){
+        document.getElementById('waLink').href=`https://wa.me/${waNumber}?text=${data.activation_code}`;
+        document.getElementById('waLink').style.display='inline-block';
+        document.getElementById('waNumberDisplay').textContent='+'+waNumber;
+      }
+    } else {
+      err.textContent='// '+(data.error||'NOT FOUND').toUpperCase();
+    }
+  }catch{err.textContent='// CONNECTION FAILURE'}
+}
+
+async function register(){
+  const btn=document.getElementById('regBtn'),err=document.getElementById('regErr');
+  err.textContent='';
+  const name=document.getElementById('regName').value.trim();
+  const email=document.getElementById('regEmail').value.trim();
+  const phone=document.getElementById('regPhone').value.trim();
+  if(!name||!email||!phone){err.textContent='// ALL FIELDS REQUIRED';return}
+  if(!email.includes('@')){err.textContent='// INVALID EMAIL FORMAT';return}
+  btn.disabled=true;btn.textContent='INITIALIZING...';
+  try{
+    const res=await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,phone})});
+    const data=await res.json();
+    if(data.success){
+      document.getElementById('formFields').style.display='none';
+      document.getElementById('successMsg').style.display='block';
+      document.getElementById('activationCode').textContent=data.activation_code;
+      if(waNumber){
+        document.getElementById('waLink').href=`https://wa.me/${waNumber}?text=${data.activation_code}`;
+        document.getElementById('waLink').style.display='inline-block';
+        document.getElementById('waNumberDisplay').textContent='+'+waNumber;
+      } else {
+        document.getElementById('waLink').style.display='none';
+        document.getElementById('waNumberDisplay').textContent='(Number will be shown once configured)';
+      }
+    }else{err.textContent='// '+( data.error||'SYSTEM ERROR').toUpperCase();btn.disabled=false;btn.textContent='Generate Access Code →'}
+  }catch{err.textContent='// CONNECTION FAILURE';btn.disabled=false;btn.textContent='Generate Access Code →'}
+}
+
+// ─── Iron Man Repulsor Sound ─────────────────────────────────
+(function(){
+  var started=false;
+  function startAmbient(){
+    if(started)return;started=true;
+    document.removeEventListener('click',startAmbient);
+    document.removeEventListener('touchstart',startAmbient);
+    try{
+      var ctx=new(window.AudioContext||window.webkitAudioContext)();
+      var t=ctx.currentTime;
+
+      // === REPULSOR CHARGE-UP (rising whine) ===
+      // High-pitched charging whine that rises in pitch
+      var charge=ctx.createOscillator();charge.type='sawtooth';charge.frequency.value=150;
+      var chargeGain=ctx.createGain();chargeGain.gain.value=0;
+      var chargeFilter=ctx.createBiquadFilter();chargeFilter.type='bandpass';chargeFilter.frequency.value=800;chargeFilter.Q.value=3;
+      charge.connect(chargeFilter);chargeFilter.connect(chargeGain);chargeGain.connect(ctx.destination);
+      // Ramp up the whine
+      charge.frequency.setValueAtTime(150,t);
+      charge.frequency.exponentialRampToValueAtTime(1200,t+1.2);
+      charge.frequency.exponentialRampToValueAtTime(2400,t+1.8);
+      chargeFilter.frequency.setValueAtTime(400,t);
+      chargeFilter.frequency.exponentialRampToValueAtTime(3000,t+1.8);
+      chargeGain.gain.setValueAtTime(0,t);
+      chargeGain.gain.linearRampToValueAtTime(0.04,t+0.3);
+      chargeGain.gain.linearRampToValueAtTime(0.08,t+1.5);
+      chargeGain.gain.linearRampToValueAtTime(0.12,t+1.8);
+      chargeGain.gain.linearRampToValueAtTime(0,t+2.0);
+      charge.start(t);charge.stop(t+2.1);
+
+      // Secondary charge harmonic
+      var charge2=ctx.createOscillator();charge2.type='sine';charge2.frequency.value=300;
+      var c2g=ctx.createGain();c2g.gain.value=0;
+      charge2.connect(c2g);c2g.connect(ctx.destination);
+      charge2.frequency.setValueAtTime(300,t);
+      charge2.frequency.exponentialRampToValueAtTime(3200,t+1.8);
+      c2g.gain.setValueAtTime(0,t);
+      c2g.gain.linearRampToValueAtTime(0.03,t+0.5);
+      c2g.gain.linearRampToValueAtTime(0.06,t+1.7);
+      c2g.gain.linearRampToValueAtTime(0,t+2.0);
+      charge2.start(t);charge2.stop(t+2.1);
+
+      // === BLAST RELEASE (at t+1.8s) ===
+      var blastTime=t+1.8;
+
+      // Heavy bass blast thump
+      var blast=ctx.createOscillator();blast.type='sine';blast.frequency.value=120;
+      var blastGain=ctx.createGain();blastGain.gain.value=0;
+      blast.connect(blastGain);blastGain.connect(ctx.destination);
+      blast.frequency.setValueAtTime(120,blastTime);
+      blast.frequency.exponentialRampToValueAtTime(30,blastTime+0.8);
+      blastGain.gain.setValueAtTime(0.2,blastTime);
+      blastGain.gain.exponentialRampToValueAtTime(0.001,blastTime+1.0);
+      blast.start(blastTime);blast.stop(blastTime+1.1);
+
+      // Blast noise burst (the "woosh")
+      var bufLen=ctx.sampleRate*1.5;
+      var noiseBuf=ctx.createBuffer(1,bufLen,ctx.sampleRate);
+      var data=noiseBuf.getChannelData(0);
+      for(var i=0;i<bufLen;i++)data[i]=(Math.random()*2-1);
+      var noise=ctx.createBufferSource();noise.buffer=noiseBuf;
+      var noiseFilter=ctx.createBiquadFilter();noiseFilter.type='bandpass';noiseFilter.frequency.value=1500;noiseFilter.Q.value=0.8;
+      var noiseGain=ctx.createGain();noiseGain.gain.value=0;
+      noise.connect(noiseFilter);noiseFilter.connect(noiseGain);noiseGain.connect(ctx.destination);
+      noiseFilter.frequency.setValueAtTime(3000,blastTime);
+      noiseFilter.frequency.exponentialRampToValueAtTime(200,blastTime+1.2);
+      noiseGain.gain.setValueAtTime(0.15,blastTime);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001,blastTime+1.2);
+      noise.start(blastTime);noise.stop(blastTime+1.3);
+
+      // Blast mid-range beam tone
+      var beam=ctx.createOscillator();beam.type='square';beam.frequency.value=600;
+      var beamGain=ctx.createGain();beamGain.gain.value=0;
+      var beamFilter=ctx.createBiquadFilter();beamFilter.type='lowpass';beamFilter.frequency.value=2000;
+      beam.connect(beamFilter);beamFilter.connect(beamGain);beamGain.connect(ctx.destination);
+      beam.frequency.setValueAtTime(600,blastTime);
+      beam.frequency.exponentialRampToValueAtTime(150,blastTime+0.6);
+      beamGain.gain.setValueAtTime(0.06,blastTime);
+      beamGain.gain.exponentialRampToValueAtTime(0.001,blastTime+0.8);
+      beam.start(blastTime);beam.stop(blastTime+0.9);
+
+      // === AMBIENT HUM (after blast settles) ===
+      var humTime=t+3.0;
+      var hum=ctx.createOscillator();hum.type='sine';hum.frequency.value=80;
+      var humGain=ctx.createGain();humGain.gain.value=0;
+      hum.connect(humGain);humGain.connect(ctx.destination);
+      humGain.gain.setValueAtTime(0,humTime);
+      humGain.gain.linearRampToValueAtTime(0.015,humTime+1.0);
+      hum.start(humTime);
+
+      // Faint reactor idle tone
+      var idle=ctx.createOscillator();idle.type='triangle';idle.frequency.value=220;
+      var idleGain=ctx.createGain();idleGain.gain.value=0;
+      idle.connect(idleGain);idleGain.connect(ctx.destination);
+      idleGain.gain.setValueAtTime(0,humTime);
+      idleGain.gain.linearRampToValueAtTime(0.005,humTime+1.5);
+      idle.start(humTime);
+    }catch(e){}
+  }
+  document.addEventListener('click',startAmbient);
+  document.addEventListener('touchstart',startAmbient);
+})();
+</script>
+</body>
+</html>

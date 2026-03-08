@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  dashboard:
+    build: .
+    container_name: openclaw-dashboard
+    ports:
+      - "80:80"
+    environment:
+      - PORT=80
+      - ANTHROPIC_API_KEY=<ANTHROPIC_API_KEY>
+      - TELEGRAM_TOKEN=<TELEGRAM_BOT_TOKEN>
+      - TELEGRAM_CHAT_ID=8383924559
+      - DASH_PASSWORD=Wayne2026#
+    restart: unless-stopped
+    networks:
+      - dashboard-net
+
+networks:
+  dashboard-net:
+    driver: bridge

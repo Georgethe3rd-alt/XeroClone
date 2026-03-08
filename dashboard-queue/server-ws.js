@@ -361,6 +361,44 @@ app.get('/api/status/:requestId', async (req, res) => {
   }
 });
 
+// ─── API: Text-to-Speech (ElevenLabs) ───────────────────────────
+const ELEVEN_API_KEY = '57c09b8f5eeffb886a2e2635025c18188247c20228f3018cfb314c7b8198ac66';
+const ELEVEN_VOICE_ID = 'onwK4e9ZLuTAKqWW03F9'; // Daniel
+
+app.post('/api/tts', async (req, res) => {
+  const { text } = req.body;
+  if (!text) return res.status(400).json({ error: 'text required' });
+  
+  // Clean markdown for speech
+  const cleanText = text.replace(/\*\*/g, '').replace(/[#*_`]/g, '').replace(/\n+/g, '. ').replace(/\[.*?\]/g, '').substring(0, 1000);
+  
+  try {
+    const ttsResp = await axios({
+      method: 'POST',
+      url: `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}`,
+      headers: {
+        'xi-api-key': ELEVEN_API_KEY,
+        'Content-Type': 'application/json',
+        'Accept': 'audio/mpeg'
+      },
+      data: {
+        text: cleanText,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+      },
+      responseType: 'arraybuffer',
+      timeout: 15000
+    });
+    
+    res.set('Content-Type', 'audio/mpeg');
+    res.set('Cache-Control', 'no-cache');
+    res.send(Buffer.from(ttsResp.data));
+  } catch (err) {
+    console.error('[TTS] ElevenLabs error:', err.message);
+    res.status(500).json({ error: 'TTS failed: ' + err.message });
+  }
+});
+
 // ─── Health ─────────────────────────────────────────────────────
 app.get('/health', async (req, res) => {
   let queueStatus = 'disconnected';

@@ -2697,28 +2697,58 @@ async function pollVoiceResponse(requestId, agentId) {
   }, 2000);
 }
 
-function speakResponse(text) {
-  // Strip markdown for speech
-  const cleanText = text.replace(/\*\*/g, '').replace(/[#*_`]/g, '').replace(/\n+/g, '. ').replace(/\[.*?\]/g, '').substring(0, 500);
+let currentAudio = null;
+
+async function speakResponse(text) {
+  voiceState = 'speaking';
+  updateVoiceUI();
   
-  if (voiceSynth) {
-    voiceSynth.cancel();
+  try {
+    // Use ElevenLabs via server endpoint
+    const resp = await fetch('/api/tts', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ text })
+    });
+    
+    if (!resp.ok) throw new Error('TTS failed');
+    
+    const audioBlob = await resp.blob();
+    const audioUrl = URL.createObjectURL(audioBlob);
+    
+    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+    
+    currentAudio = new Audio(audioUrl);
+    currentAudio.onended = () => {
+      voiceState = 'listening';
+      updateVoiceUI();
+      URL.revokeObjectURL(audioUrl);
+      currentAudio = null;
+    };
+    currentAudio.onerror = () => {
+      // Fallback to browser TTS
+      fallbackSpeak(text);
+    };
+    currentAudio.play().catch(() => fallbackSpeak(text));
+    
+  } catch(e) {
+    console.error('[Voice] ElevenLabs failed, using browser TTS:', e);
+    fallbackSpeak(text);
+  }
+}
+
+function fallbackSpeak(text) {
+  const cleanText = text.replace(/\*\*/g, '').replace(/[#*_`]/g, '').replace(/\n+/g, '. ').replace(/\[.*?\]/g, '').substring(0, 500);
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.rate = 1.0;
     utterance.pitch = 0.9;
-    utterance.volume = 1.0;
-    
-    // Try to find a good English voice
-    const voices = voiceSynth.getVoices();
-    const preferred = voices.find(v => v.name.includes('Google UK English Male') || v.name.includes('Daniel'));
-    if (preferred) utterance.voice = preferred;
-    
-    utterance.onend = () => {
-      voiceState = 'listening';
-      updateVoiceUI();
-    };
-    
-    voiceSynth.speak(utterance);
+    utterance.onend = () => { voiceState = 'listening'; updateVoiceUI(); };
+    window.speechSynthesis.speak(utterance);
+  } else {
+    voiceState = 'listening';
+    updateVoiceUI();
   }
 }
 

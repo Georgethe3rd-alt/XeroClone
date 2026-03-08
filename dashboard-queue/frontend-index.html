@@ -2796,11 +2796,27 @@ function updateVoiceUI() {
   }
 }
 
-// Initialize
+// Auto-start voice assistant after login
+function autoStartVoice() {
+  // Wait for auth to complete, then auto-start
+  const checkAuth = setInterval(() => {
+    const dashboard = document.getElementById('dashboard');
+    if (dashboard && dashboard.style.display !== 'none') {
+      clearInterval(checkAuth);
+      setTimeout(() => {
+        console.log('[Voice] Auto-starting voice assistant...');
+        startVoiceAssistant();
+      }, 1000);
+    }
+  }, 500);
+  // Give up after 30s
+  setTimeout(() => clearInterval(checkAuth), 30000);
+}
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initVoiceInput);
+  document.addEventListener('DOMContentLoaded', autoStartVoice);
 } else {
-  initVoiceInput();
+  autoStartVoice();
 }
 </script>
 

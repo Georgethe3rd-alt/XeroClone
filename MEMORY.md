@@ -75,17 +75,19 @@ Key lesson: They didn't just respond to requests - they anticipated needs and ha
 - Use WiPay for ALL payment integrations, never Stripe
 - API: https://tt.wipayfinancial.com/plugins/payments/request
 
-## OpenClaw Dashboard (Deployed 2026-03-08)
+## OpenClaw Dashboard (Merged 2026-03-08 08:32 EDT)
 - **URL**: http://187.77.8.165
 - **Password**: Wayne2026#
 - **Location**: srv1353804 (187.77.8.165), /root/dashboard-host/
-- **Features**: Multi-agent dashboard with persistent personalities
-- **Agents**: George (main), Ryan (technical), Brian (research), Keisha (creative)
+- **UI**: 9 tabs - Office (pixel art), LiveView, Docs, Status, Agents, Timeline, Projects, Chat, Logs
+- **Agents**: George (main), Ryan (technical 🔧), Brian (research 📊), Keisha (creative ✨)
 - **Personality System**: Each agent has IDENTITY.md, SOUL.md, MEMORY.md
-- **Architecture**: Dashboard (host:80) ↔ Webhook (container:3005) ↔ Agent files
-- **API**: Full personality configuration API tested and working
+- **Docs**: 4 guides (User, Technical, Issues, Developer) - markdown rendered via marked library
+- **API**: GET/PUT /api/agents/:id/config, GET /api/docs/:id
+- **Architecture**: Dashboard (host:80) ↔ Webhook (container:3005) ↔ Agent workspaces
+- **Webhook**: http://172.18.0.2:3005 (handles agent config, reads IDENTITY/SOUL/MEMORY)
 - **GitHub**: Georgethe3rd-alt/dashboard
-- **Status**: Production ready, all features operational
+- **Status**: Full merge complete - Office visualization + Docs + Personality system operational
 
 ## Jarvis Platform (Built 2026-03-01)
 - Multi-tenant AI assistant via WhatsApp Business API

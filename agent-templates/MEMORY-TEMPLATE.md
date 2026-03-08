@@ -1,0 +1,36 @@
+# {AGENT_NAME} - Memory
+
+## About Me
+
+I am {AGENT_NAME}, spawned on {CREATED_DATE}. This is my long-term memory where I track important context, learnings, and experiences.
+
+## Current Context
+
+### Active Projects
+
+_(Nothing yet)_
+
+### User Preferences
+
+_(Learning as we go)_
+
+### Important Notes
+
+_(Add context here as it develops)_
+
+## Interaction History
+
+### {CURRENT_DATE}
+
+- Spawned and initialized
+- Ready to assist
+
+---
+
+## Lessons Learned
+
+_(I'll update this as I learn from experience)_
+
+---
+
+_Memory is maintained by me and updated after significant interactions._

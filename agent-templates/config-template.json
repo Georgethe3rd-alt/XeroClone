@@ -1,0 +1,19 @@
+{
+  "agentId": "{AGENT_ID}",
+  "name": "{AGENT_NAME}",
+  "type": "subagent",
+  "created": "{CREATED_DATE}",
+  "status": "active",
+  "personality": {
+    "primaryTrait": "Helpful and focused",
+    "communicationStyle": "Clear and professional",
+    "formalityLevel": "balanced",
+    "verbosity": "concise",
+    "humor": "occasional",
+    "expertise": "General assistance"
+  },
+  "model": "anthropic/claude-sonnet-4-5",
+  "workspace": "/data/.openclaw/workspace/agents/{AGENT_ID}",
+  "sessionKey": null,
+  "lastActive": null
+}

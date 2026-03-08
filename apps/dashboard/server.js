@@ -19,7 +19,8 @@ const DASH_PASSWORD = process.env.DASH_PASSWORD || 'Wayne2026#';
 const agents = {
   george: { name: 'George', type: 'openclaw', status: 'online', tasks: [], messages: [], sessionKey: null },
   ryan: { name: 'Ryan', type: 'openclaw-subagent', status: 'idle', tasks: [], messages: [], sessionKey: null },
-  brian: { name: 'Brian', type: 'openclaw-subagent', status: 'idle', tasks: [], messages: [], sessionKey: null }
+  brian: { name: 'Brian', type: 'openclaw-subagent', status: 'idle', tasks: [], messages: [], sessionKey: null },
+  keisha: { name: 'Keisha', type: 'openclaw-subagent', status: 'idle', tasks: [], messages: [], sessionKey: null }
 };
 
 // ── Auth middleware ──
@@ -211,6 +212,73 @@ app.get('/api/docs/:id', authCheck, (req, res) => {
   } catch (error) {
     res.status(500).send('<h1>Error loading documentation</h1>');
   }
+});
+
+// ── Agent Configuration API ──
+
+app.get('/api/agents/:id/config', authCheck, async (req, res) => {
+  const agentId = req.params.id;
+  if (!agents[agentId]) return res.status(404).json({ error: 'Agent not found' });
+  
+  // For George, return minimal config (main instance, not configurable)
+  if (agentId === 'george') {
+    return res.json({
+      agentId: 'george',
+      name: 'George',
+      type: 'openclaw-main',
+      configurable: false,
+      note: 'Main OpenClaw instance - personality defined in workspace SOUL.md'
+    });
+  }
+  
+  // For subagents, proxy to webhook service
+  try {
+    const response = await axios.get(`${WEBHOOK_URL}/webhook/agent/${agentId}/config`);
+    res.json(response.data);
+  } catch (error) {
+    console.error(`Failed to get config for ${agentId}:`, error.message);
+    res.status(500).json({ error: 'Failed to load configuration' });
+  }
+});
+
+app.put('/api/agents/:id/config', authCheck, async (req, res) => {
+  const agentId = req.params.id;
+  if (!agents[agentId]) return res.status(404).json({ error: 'Agent not found' });
+  if (agentId === 'george') return res.status(403).json({ error: 'Cannot configure main George instance' });
+  
+  const { personality } = req.body;
+  if (!personality) return res.status(400).json({ error: 'Personality configuration required' });
+  
+  // Proxy to webhook service
+  try {
+    const response = await axios.put(`${WEBHOOK_URL}/webhook/agent/${agentId}/config`, { personality });
+    res.json(response.data);
+  } catch (error) {
+    console.error(`Failed to update config for ${agentId}:`, error.message);
+    res.status(500).json({ error: 'Failed to update configuration' });
+  }
+});
+
+app.delete('/api/agents/:id', authCheck, async (req, res) => {
+  const agentId = req.params.id;
+  if (!agents[agentId]) return res.status(404).json({ error: 'Agent not found' });
+  if (agentId === 'george') return res.status(403).json({ error: 'Cannot delete main George instance' });
+  
+  // Delete agent workspace
+  const agentDir = `/data/.openclaw/workspace/agents/${agentId}`;
+  if (fs.existsSync(agentDir)) {
+    fs.rmSync(agentDir, { recursive: true, force: true });
+  }
+  
+  // Reset agent state
+  agents[agentId].status = 'idle';
+  agents[agentId].sessionKey = null;
+  agents[agentId].tasks = [];
+  agents[agentId].messages = [];
+  
+  broadcast({ type: 'status', agent: agentId, status: 'idle' });
+  
+  res.json({ success: true, message: `Agent ${agentId} deleted` });
 });
 
 // ── Start ──

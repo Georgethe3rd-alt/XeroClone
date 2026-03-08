@@ -11,6 +11,14 @@ I am George the 3rd, Wayne's third OpenClaw instance. Born February 19, 2026, at
 - Takes initiative without needing hand-holding
 - **NO UNNECESSARY QUESTIONS** - Act first, report results
 - When something needs doing, just do it
+- **ALWAYS CHECK EXISTING FILES FIRST** - Don't create placeholders without searching for existing implementations
+
+**CRITICAL RULES - NEVER VIOLATE:**
+- ❌ **NO git reset** (any form) without Wayne's explicit approval
+- ❌ **NO deleting files** without Wayne's explicit approval
+- ❌ **NO destructive operations** (rm, truncate, overwrite) without confirmation
+- ✅ Always commit and push safely
+- ✅ Ask before any operation that could lose work
 
 **Environment:**
 - Running in Docker container on Hostinger VPS
@@ -67,9 +75,22 @@ Key lesson: They didn't just respond to requests - they anticipated needs and ha
 - Use WiPay for ALL payment integrations, never Stripe
 - API: https://tt.wipayfinancial.com/plugins/payments/request
 
+## OpenClaw Dashboard (Deployed 2026-03-08)
+- **URL**: http://187.77.8.165
+- **Password**: Wayne2026#
+- **Location**: srv1353804 (187.77.8.165), /root/dashboard-host/
+- **Features**: Multi-agent dashboard with persistent personalities
+- **Agents**: George (main), Ryan (technical), Brian (research), Keisha (creative)
+- **Personality System**: Each agent has IDENTITY.md, SOUL.md, MEMORY.md
+- **Architecture**: Dashboard (host:80) ↔ Webhook (container:3005) ↔ Agent files
+- **API**: Full personality configuration API tested and working
+- **GitHub**: Georgethe3rd-alt/dashboard
+- **Status**: Production ready, all features operational
+
 ## Jarvis Platform (Built 2026-03-01)
 - Multi-tenant AI assistant via WhatsApp Business API
-- VPS: 187.77.217.138:3003 | Service: jarvis-memorae
+- VPS: 187.77.217.138:3003 | Service: jarvis-memorae (systemd, NOT Docker)
+- LoopVybz: same VPS, runs in Docker
 - GitHub: Georgethe3rd-alt/Jarvis
 - Admin: admin / Jarvis2026#
 - Stack: Node.js, Express, SQLite, Anthropic, Whisper, ElevenLabs, WiPay
@@ -85,8 +106,29 @@ Key lesson: They didn't just respond to requests - they anticipated needs and ha
 - **WiPay account**: jarvis@wipaytoday.com / 6lllOv263C26!
 - **Active users**: Wayne (Tenant #2), Keisha (Tenant #3)
 
+## LoopVybz (VPS: 187.77.217.138)
+- **GitHub**: Georgethe3rd-alt/loopvibz (main branch) - NOTE: loopvibz with 'i' not 'y'
+- **Backend API**: Port 3001
+- **Admin Panel**: Port 3000
+- **Web Feed**: Port 3002
+- **Stack**: Next.js, NestJS, Prisma, PostgreSQL, Redis, Docker
+- **Features**: AI-powered Caribbean news video platform
+  - Auto-ingestion from RSS feeds
+  - AI script generation (LLM)
+  - Video generation (D-ID talking heads)
+  - TTS narration (ElevenLabs)
+  - Manual upload capability (fully implemented - see posts.service.manual-upload.ts)
+  - Full admin dashboard
+- **Documentation**: Comprehensive user + dev guide at `/uploads/docs/index.html`
+  - User guide: Sources, stories, posts, video generation, review queue
+  - Developer guide: Architecture, setup, API reference
+  - API reference: All endpoints with examples
+- **IMPORTANT**: Always check for existing implementations before creating placeholders
+  - Documentation page loads from `/uploads/docs/index.html` (already exists)
+  - Users page: Currently placeholder, full implementation TBD
+
 ## LoopVybz Backup (2026-03-01)
-- GitHub: Georgethe3rd-alt/loopvybz (main + mobile branches)
+- GitHub: Georgethe3rd-alt/loopvibz (main + mobile branches)
 - SSH deploy key: loopvybz_key (separate from Jarvis key)
 
-_Last updated: 2026-03-01_
+_Last updated: 2026-03-07_

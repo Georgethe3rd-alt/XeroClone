@@ -1,0 +1,6 @@
+{
+  "requestId": "scout-1772985224064",
+  "status": "done",
+  "response": "I don't have access to calendar information yet. To check your calendar, I'd need: 1. Calendar integration configured (Google Calendar, Outlook, etc.) 2. Appropriate API credentials 3. Permission to access your calendar data. Is this a test of the dashboard queue system?",
+  "timestamp": 1772985290000
+}

@@ -1,0 +1,6 @@
+{
+  "model": "anthropic/claude-haiku-4-5",
+  "thinking": "off",
+  "temperature": 0.3,
+  "description": "Heartbeat monitoring agent - periodic checks for emails, calendar, notifications"
+}

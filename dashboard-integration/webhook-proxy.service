@@ -1,0 +1,17 @@
+[Unit]
+Description=Dashboard Webhook Proxy for OpenClaw
+After=network.target
+
+[Service]
+Type=simple
+User=node
+WorkingDirectory=/data/.openclaw/workspace/dashboard-integration
+ExecStart=/usr/bin/node /data/.openclaw/workspace/dashboard-integration/webhook-proxy.js
+Restart=always
+RestartSec=10
+Environment=PORT=3006
+StandardOutput=append:/var/log/webhook-proxy.log
+StandardError=append:/var/log/webhook-proxy-error.log
+
+[Install]
+WantedBy=multi-user.target

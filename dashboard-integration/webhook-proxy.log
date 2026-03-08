@@ -1,0 +1,5 @@
+[WebhookProxy] Starting dashboard webhook proxy...
+[WebhookProxy] Listening on 0.0.0.0:3006
+[WebhookProxy] Dashboard can reach at http://172.18.0.2:3006
+[WebhookProxy] Agents configured: scout, ryan, brian, keisha, george
+[WebhookProxy] Error fetching agents: Request failed with status code 405

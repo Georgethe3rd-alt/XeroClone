@@ -70,6 +70,21 @@ Key lesson: They didn't just respond to requests - they anticipated needs and ha
 
 ---
 
+## Critical Lessons Learned
+
+### Always Test Before Reporting (2026-03-08)
+**What happened**: Fixed dashboard crash (tab button syntax errors) and told Wayne it was fixed without testing it myself first. Wayne had to tell me to verify my own work.
+
+**The lesson**: NEVER report a fix as complete without running tests yourself first. Wayne's time is valuable - he shouldn't have to verify my work. Pattern:
+1. Make the fix
+2. **Test it myself** (login, click through, verify functionality)
+3. **Show proof** (test results, screenshots, verification output)
+4. Then report success with evidence
+
+**Why it matters**: Wastes Wayne's time if it doesn't work. Shows lack of thoroughness. Makes me seem lazy or careless.
+
+**Committed to**: SOUL.md as core principle - "TEST BEFORE REPORTING"
+
 ## Wayne Owns WiPay
 - WiPay Caribbean (wipaycaribbean.com) — Caribbean payment processor
 - Use WiPay for ALL payment integrations, never Stripe

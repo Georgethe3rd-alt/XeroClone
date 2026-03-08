@@ -385,6 +385,7 @@
 }
 </style>
 
+<style>
 /* Documentation styling */
 #docViewer h1 { font-size: 32px; margin-bottom: 16px; color: var(--text); }
 #docViewer h2 { font-size: 24px; margin: 32px 0 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; color: var(--text); }
@@ -400,6 +401,7 @@
 #docViewer th { background: var(--surface2); font-weight: 600; }
 #docViewer a { color: var(--accent); text-decoration: none; }
 #docViewer a:hover { text-decoration: underline; }
+</style>
 </head>
 <body>
 
@@ -601,20 +603,59 @@
     <!-- Logs -->
 <!-- Live View Tab -->
 <div id="tab-liveview" class="tab-content">
-  <div class="liveview-controls" style="padding:16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center;">
+  <!-- Agent Selector -->
+  <div style="padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;overflow-x:auto;">
+    <span style="font-size:11px;color:var(--text-dim);white-space:nowrap;">WATCHING:</span>
+    <button class="btn btn-secondary btn-small lv-agent-btn" onclick="liveViewAgent('george')" style="border-left:3px solid #0af;">👑 George</button>
+    <button class="btn btn-secondary btn-small lv-agent-btn" onclick="liveViewAgent('scout')" style="border-left:3px solid #00ff88;">🔔 Scout</button>
+    <button class="btn btn-secondary btn-small lv-agent-btn" onclick="liveViewAgent('ryan')" style="border-left:3px solid #3B82F6;">🔧 Ryan</button>
+    <button class="btn btn-secondary btn-small lv-agent-btn" onclick="liveViewAgent('brian')" style="border-left:3px solid #7C3AED;">📊 Brian</button>
+    <button class="btn btn-secondary btn-small lv-agent-btn" onclick="liveViewAgent('keisha')" style="border-left:3px solid #EC4899;">✨ Keisha</button>
+  </div>
+  
+  <!-- Agent Project Info Bar -->
+  <div id="liveviewAgentBar" style="display:none;padding:10px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <span id="lvAgentName" style="font-weight:700;font-size:14px;"></span>
+      <span id="lvAgentProject" style="font-size:12px;color:var(--text-dim);margin-left:12px;"></span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <span id="lvAgentStatus" style="font-size:11px;padding:3px 10px;border-radius:12px;background:rgba(0,255,136,0.15);color:var(--green);">idle</span>
+      <span id="lvCurrentUrl" style="font-size:10px;color:var(--text-dim);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+    </div>
+  </div>
+
+  <!-- URL Bar -->
+  <div class="liveview-controls" style="padding:10px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;">
+    <select id="liveviewProjectSelect" onchange="loadAgentProject(this.value)" style="padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;">
+      <option value="">Quick Load...</option>
+      <optgroup label="George's Projects">
+        <option value="http://187.77.8.165">Dashboard</option>
+      </optgroup>
+      <optgroup label="Ryan's Projects">
+        <option value="http://187.77.217.138:3001">LoopVybz API</option>
+        <option value="http://187.77.217.138:3000">LoopVybz Admin</option>
+      </optgroup>
+      <optgroup label="Keisha's Projects">
+        <option value="http://187.77.217.138:3002">LoopVybz Web Feed</option>
+      </optgroup>
+      <optgroup label="Brian's Projects">
+        <option value="https://jarvisproject.ai">Jarvis</option>
+      </optgroup>
+    </select>
     <input 
       type="text" 
       id="liveviewUrl" 
       placeholder="Enter URL to preview..." 
-      style="flex:1;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;"
+      style="flex:1;padding:8px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;"
       onkeydown="if(event.key==='Enter')loadLiveView()"
     >
-    <button class="btn btn-primary" onclick="loadLiveView()">Load</button>
-    <button class="btn btn-secondary" onclick="refreshLiveView()">↻ Refresh</button>
-    <button class="btn btn-secondary" onclick="toggleFullscreen()">⛶ Fullscreen</button>
+    <button class="btn btn-primary btn-small" onclick="loadLiveView()">Go</button>
+    <button class="btn btn-secondary btn-small" onclick="refreshLiveView()">↻</button>
+    <button class="btn btn-secondary btn-small" onclick="toggleFullscreen()">⛶</button>
   </div>
   
-  <div id="liveviewContainer" style="position:relative;height:calc(100vh - 200px);background:var(--bg);">
+  <div id="liveviewContainer" style="position:relative;height:calc(100vh - 260px);background:var(--bg);">
     <iframe 
       id="liveviewFrame" 
       style="width:100%;height:100%;border:none;background:#fff;"
@@ -623,9 +664,23 @@
     
     <div id="liveviewEmpty" class="empty-state" style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--bg);">
       <div style="text-align:center;">
-        <div style="font-size:64px;margin-bottom:16px;">🌐</div>
-        <div style="font-size:18px;color:var(--text);margin-bottom:8px;">Live View</div>
-        <div style="font-size:13px;color:var(--text-dim);">Enter a URL above or ask an agent to show you their work</div>
+        <div style="font-size:64px;margin-bottom:16px;">🖥️</div>
+        <div style="font-size:18px;color:var(--text);margin-bottom:8px;">Agent Live View</div>
+        <div style="font-size:13px;color:var(--text-dim);margin-bottom:16px;">Select an agent above to see what they're working on</div>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+          <div onclick="liveViewAgent('george')" style="cursor:pointer;padding:16px 24px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-align:center;transition:all 0.2s;" onmouseover="this.style.borderColor='#0af'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-size:28px;">👑</div><div style="font-size:12px;margin-top:4px;">George</div>
+          </div>
+          <div onclick="liveViewAgent('ryan')" style="cursor:pointer;padding:16px 24px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-align:center;transition:all 0.2s;" onmouseover="this.style.borderColor='#3B82F6'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-size:28px;">🔧</div><div style="font-size:12px;margin-top:4px;">Ryan</div>
+          </div>
+          <div onclick="liveViewAgent('brian')" style="cursor:pointer;padding:16px 24px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-align:center;transition:all 0.2s;" onmouseover="this.style.borderColor='#7C3AED'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-size:28px;">📊</div><div style="font-size:12px;margin-top:4px;">Brian</div>
+          </div>
+          <div onclick="liveViewAgent('keisha')" style="cursor:pointer;padding:16px 24px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-align:center;transition:all 0.2s;" onmouseover="this.style.borderColor='#EC4899'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-size:28px;">✨</div><div style="font-size:12px;margin-top:4px;">Keisha</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -776,7 +831,28 @@ function connectWS(){
     const proto=location.protocol==='https:'?'wss':'ws';
     ws=new WebSocket(`${proto}://${location.host}/ws`);
     ws.onopen=()=>{document.getElementById('wsStatus').className='status-dot online';document.getElementById('wsStatusText').textContent='Connected';addLog('info','WebSocket connected');};
-    ws.onmessage=(evt)=>{const data=JSON.parse(evt.data);if(data.type==='init'){Object.assign(agentsState,data.agents||{});renderAll();}if(data.type==='message'){if(!agentsState[data.agent])agentsState[data.agent]={messages:[]};agentsState[data.agent].messages=agentsState[data.agent].messages||[];agentsState[data.agent].messages.push(data.message);if(activeAgent===data.agent&&activeTab==='chat')renderChat();}if(data.type==='status'){if(!agentsState[data.agent])agentsState[data.agent]={};agentsState[data.agent].status=data.status;renderAll();}};
+    ws.onmessage=(evt)=>{
+      const data=JSON.parse(evt.data);
+      if(data.type==='init'){renderAll();}
+      if(data.type==='chat'){
+        // Real-time chat message from WebSocket
+        if(!agentsState[data.agent])agentsState[data.agent]={messages:[]};
+        agentsState[data.agent].messages=agentsState[data.agent].messages||[];
+        agentsState[data.agent].messages.push({role:data.role,content:data.content,ts:new Date().toISOString()});
+        if(activeAgent===data.agent&&activeTab==='chat')renderChat();
+        if(data.role==='assistant')addNotification(data.agent+' replied');
+      }
+      if(data.type==='typing'){
+        const indicator=document.getElementById('chatTypingIndicator');
+        if(indicator&&activeAgent===data.agent){
+          indicator.style.display=data.typing?'block':'none';
+        }
+      }
+      if(data.type==='status'){
+        if(!agentsState[data.agent])agentsState[data.agent]={};
+        agentsState[data.agent].status=data.status;renderAll();
+      }
+    };
     ws.onclose=()=>{document.getElementById('wsStatus').className='status-dot idle';document.getElementById('wsStatusText').textContent='API Mode';};
     ws.onerror=()=>{document.getElementById('wsStatus').className='status-dot idle';document.getElementById('wsStatusText').textContent='API Mode';};
   }catch(e){
@@ -785,7 +861,14 @@ function connectWS(){
   }
 }
 
-function sendMessage(agent,message){if(!ws||ws.readyState!==WebSocket.OPEN)return;ws.send(JSON.stringify({type:'chat',agent,message}));addLog('info',`Sent message to ${agent}`);}
+async function sendMessage(agent,message){
+  try{
+    const resp=await fetch('/api/chat/'+agent,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message})});
+    const data=await resp.json();
+    if(data.error)addLog('error','Chat error: '+data.error);
+    else addLog('info','Sent to '+agent);
+  }catch(e){addLog('error','Send failed: '+e.message);}
+}
 
 // Rendering
 function renderAll(){renderStatusBadges();renderStatus();renderAgents();renderProjects();renderChatSelect();renderTimeline();if(activeAgent&&activeTab==='chat')renderChat();}
@@ -890,7 +973,23 @@ function renderTimeline(){const el=document.getElementById('timeline');if(!el)re
 
 function renderChatSelect(){const select=document.getElementById('chatAgentSelect');if(!select)return;const currentValue=select.value;select.innerHTML='<option value="">-- Choose an agent --</option>'+Object.entries(agentsState).filter(([id,a])=>!a.readOnly).map(([id,a])=>`<option value="${id}">${a.name||id} (${a.type||'agent'})</option>`).join('');if(currentValue)select.value=currentValue;}
 
-function renderChat(){const a=agentsState[activeAgent];if(!a)return;document.getElementById('chatAgentName').textContent=a.name||activeAgent;document.getElementById('chatAgentType').textContent=a.type||'agent';document.getElementById('chatAgentStatus').textContent=a.status||'idle';document.getElementById('chatStatusDot').className=`status-dot ${a.status||'idle'}`;const area=document.getElementById('chatArea');if(!area)return;if(!a.messages||a.messages.length===0){area.innerHTML='<div class="empty-state"><div class="big">💬</div><div>Start a conversation</div></div>';}else{area.innerHTML=a.messages.map(m=>`<div class="message ${m.role}">${escapeHtml(m.content)}<div class="msg-meta">${new Date(m.ts).toLocaleTimeString()}</div></div>`).join('');area.scrollTop=area.scrollHeight;}}
+function renderChat(){
+  const a=agentsState[activeAgent];if(!a)return;
+  document.getElementById('chatAgentName').textContent=a.name||activeAgent;
+  document.getElementById('chatAgentType').textContent=a.type||'agent';
+  document.getElementById('chatAgentStatus').textContent=a.status||'idle';
+  document.getElementById('chatStatusDot').className='status-dot '+(a.status||'idle');
+  const area=document.getElementById('chatArea');if(!area)return;
+  if(!a.messages||a.messages.length===0){
+    area.innerHTML='<div class="empty-state"><div class="big">💬</div><div>Start a conversation</div></div>';
+  }else{
+    area.innerHTML=a.messages.map(m=>{
+      const time=m.ts?new Date(m.ts).toLocaleTimeString():'';
+      return '<div class="message '+m.role+'">'+escapeHtml(m.content)+'<div class="msg-meta">'+time+'</div></div>';
+    }).join('')+'<div id="chatTypingIndicator" style="display:none;padding:8px 16px;color:var(--text-dim);font-style:italic;font-size:12px;">Agent is thinking...</div>';
+    area.scrollTop=area.scrollHeight;
+  }
+}
 
 // Actions
 function switchTab(tab){activeTab=tab;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));const tabs=['office','status','agents','timeline','projects','tasks','chat','liveview','logs','docs'];document.querySelector(`.tab:nth-child(${tabs.indexOf(tab)+1})`).classList.add('active');document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));document.getElementById('tab-'+tab).classList.add('active');if(tab==='chat'){renderChat();populateChatAgentSelect();}if(tab==='status')renderStatus();if(tab==='agents')renderAgents();if(tab==='projects')renderProjects();if(tab==='timeline')renderTimeline();if(tab==='tasks')loadAndRenderKanban();}
@@ -921,9 +1020,24 @@ async function loadDoc(docId) {
 }
   if(tab==='office'&&document.getElementById('officeCanvas')&&!canvas){initOffice();}
 
-function selectChatAgent(agent){if(!agent){document.getElementById('chatContainer').style.display='none';document.getElementById('chatEmptyState').style.display='flex';activeAgent=null;return;}const a=agentsState[agent];if(!a||a.readOnly)return;activeAgent=agent;document.getElementById('chatContainer').style.display='flex';document.getElementById('chatEmptyState').style.display='none';renderChat();}
+async function selectChatAgent(agent){
+  if(!agent){document.getElementById('chatContainer').style.display='none';document.getElementById('chatEmptyState').style.display='flex';activeAgent=null;return;}
+  activeAgent=agent;
+  document.getElementById('chatContainer').style.display='flex';
+  document.getElementById('chatEmptyState').style.display='none';
+  
+  // Load chat history from SQLite
+  try{
+    const resp=await fetch('/api/chat/'+agent);
+    const history=await resp.json();
+    if(!agentsState[agent])agentsState[agent]={messages:[]};
+    agentsState[agent].messages=history.map(m=>({role:m.role,content:m.content,ts:m.created_at}));
+  }catch(e){console.error('Failed to load chat history:',e);}
+  
+  renderChat();
+}
 
-function handleSend(){const input=document.getElementById('chatInput');if(!input?.value.trim()||!activeAgent)return;const sendBtn=document.getElementById('sendBtn');sendBtn.disabled=true;sendBtn.textContent='Sending...';sendMessage(activeAgent,input.value.trim());input.value='';setTimeout(()=>{sendBtn.disabled=false;sendBtn.textContent='Send';},2000);}
+async function handleSend(){const input=document.getElementById('chatInput');if(!input?.value.trim()||!activeAgent)return;const sendBtn=document.getElementById('sendBtn');sendBtn.disabled=true;sendBtn.textContent='Sending...';const msg=input.value.trim();input.value='';await sendMessage(activeAgent,msg);sendBtn.disabled=false;sendBtn.textContent='Send';}
 
 function toggleAgentSelection(id){if(selectedAgents.has(id))selectedAgents.delete(id);else selectedAgents.add(id);updateBulkActions();renderAgents();}
 
@@ -1272,8 +1386,8 @@ function deleteTask(id){
 function updateAgentModel(agentId, model) {
   if (!ws || ws.readyState !== WebSocket.OPEN) return;
   ws.send(JSON.stringify({ type: "updateModel", agent: agentId, model }));
-  addLog("info", \`Updated \${agentId} model to \${model}\`);
-  addNotification(\`\${agentsState[agentId]?.name || agentId} model changed to \${model}\`);
+  addLog("info", "Updated " + agentId + " model to " + model);
+  addNotification((agentsState[agentId] && agentsState[agentId].name || agentId) + " model changed to " + model);
 }
 </script>
 
@@ -2208,12 +2322,70 @@ function initOffice() {
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initOffice);
+  document.addEventListener('DOMContentLoaded', function(){
+    initOffice();
+    checkAuth();
+  });
 } else {
   setTimeout(initOffice, 100);
 }
 
 // Live View functionality
+// Agent Live View - project mappings
+const agentProjects = {
+  george: { name: '👑 George', color: '#0af', projects: [
+    { name: 'Dashboard', url: 'http://187.77.8.165' },
+  ]},
+  scout: { name: '🔔 Scout', color: '#00ff88', projects: [
+    { name: 'System Health', url: 'http://187.77.8.165/health' },
+  ]},
+  ryan: { name: '🔧 Ryan', color: '#3B82F6', projects: [
+    { name: 'LoopVybz Admin', url: 'http://187.77.217.138:3000' },
+    { name: 'LoopVybz API', url: 'http://187.77.217.138:3001' },
+  ]},
+  brian: { name: '📊 Brian', color: '#7C3AED', projects: [
+    { name: 'Jarvis', url: 'https://jarvisproject.ai' },
+  ]},
+  keisha: { name: '✨ Keisha', color: '#EC4899', projects: [
+    { name: 'LoopVybz Web Feed', url: 'http://187.77.217.138:3002' },
+  ]}
+};
+
+let currentLvAgent = null;
+
+function liveViewAgent(agentId) {
+  const agent = agentProjects[agentId];
+  if (!agent) return;
+  
+  currentLvAgent = agentId;
+  
+  // Highlight selected button
+  document.querySelectorAll('.lv-agent-btn').forEach(b => b.style.background = '');
+  event.target.closest('.lv-agent-btn').style.background = 'var(--surface2)';
+  
+  // Show agent info bar
+  const bar = document.getElementById('liveviewAgentBar');
+  bar.style.display = 'flex';
+  document.getElementById('lvAgentName').textContent = agent.name;
+  document.getElementById('lvAgentProject').textContent = agent.projects.map(p => p.name).join(', ');
+  
+  // Load first project
+  if (agent.projects.length > 0) {
+    const url = agent.projects[0].url;
+    document.getElementById('liveviewUrl').value = url;
+    document.getElementById('lvCurrentUrl').textContent = url;
+    loadLiveView(url);
+  }
+  
+  addLog('info', 'Watching ' + agent.name);
+}
+
+function loadAgentProject(url) {
+  if (!url) return;
+  document.getElementById('liveviewUrl').value = url;
+  loadLiveView(url);
+}
+
 function loadLiveView(url) {
   const urlInput = document.getElementById('liveviewUrl');
   const targetUrl = url || urlInput.value.trim();

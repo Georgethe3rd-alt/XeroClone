@@ -91,6 +91,20 @@ for TAB in office status agents timeline projects tasks chat; do
   test_it "Tab: $TAB" "$([ "$HAS_TAB" -ge 1 ] && echo ok || echo "Missing")"
 done
 
+# 19. CSS not leaking as visible text
+CSS_LEAK=$(curl -s "$URL" | python3 -c "
+import sys,re
+html=sys.stdin.read()
+clean=re.sub(r'<style[^>]*>.*?</style>','',html,flags=re.DOTALL)
+clean=re.sub(r'<script[^>]*>.*?</script>','',clean,flags=re.DOTALL)
+clean=re.sub(r'<[^>]+>','',clean)
+if re.search(r'#\w+\s*\{|var\(--\w+\)|font-size:|border-radius:', clean):
+    print('CSS leak detected')
+else:
+    print('ok')
+")
+test_it "No CSS rendered as text" "$CSS_LEAK"
+
 echo ""
 echo "========================"
 echo "Results: $PASS passed, $FAIL failed"

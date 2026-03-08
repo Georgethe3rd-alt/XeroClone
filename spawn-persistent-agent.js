@@ -31,6 +31,20 @@ function createAgentWorkspace(agentId, agentName, personality = {}) {
   
   const now = new Date().toISOString().split('T')[0];
   
+  // Create IDENTITY.md from template
+  let identity = fs.readFileSync(path.join(TEMPLATES_DIR, 'IDENTITY-TEMPLATE.md'), 'utf8');
+  identity = identity.replace(/{AGENT_NAME}/g, agentName);
+  identity = identity.replace(/{AGENT_ID}/g, agentId);
+  identity = identity.replace(/{CREATED_DATE}/g, now);
+  identity = identity.replace(/{AGENT_TYPE}/g, 'Subagent');
+  identity = identity.replace(/{PURPOSE}/g, 'assist with specialized tasks');
+  identity = identity.replace(/{PRIMARY_FUNCTION}/g, 'General assistance');
+  identity = identity.replace(/{RESPONSIBILITY_1}/g, 'Help users with their requests');
+  identity = identity.replace(/{RESPONSIBILITY_2}/g, 'Provide accurate information');
+  identity = identity.replace(/{RESPONSIBILITY_3}/g, 'Maintain conversation context');
+  
+  fs.writeFileSync(path.join(agentDir, 'IDENTITY.md'), identity);
+  
   // Create SOUL.md from template
   let soul = fs.readFileSync(path.join(TEMPLATES_DIR, 'SOUL-TEMPLATE.md'), 'utf8');
   soul = soul.replace(/{AGENT_NAME}/g, agentName);
@@ -74,14 +88,20 @@ function createAgentWorkspace(agentId, agentName, personality = {}) {
 }
 
 /**
- * Generate spawn task prompt including soul
+ * Generate spawn task prompt including identity, soul, and memory
  */
 function generateSpawnTask(agentId, agentName) {
+  const identityPath = path.join(AGENTS_DIR, agentId, 'IDENTITY.md');
   const soulPath = path.join(AGENTS_DIR, agentId, 'SOUL.md');
   const memoryPath = path.join(AGENTS_DIR, agentId, 'MEMORY.md');
   
+  let identity = '';
   let soul = '';
   let memory = '';
+  
+  if (fs.existsSync(identityPath)) {
+    identity = fs.readFileSync(identityPath, 'utf8');
+  }
   
   if (fs.existsSync(soulPath)) {
     soul = fs.readFileSync(soulPath, 'utf8');
@@ -93,6 +113,10 @@ function generateSpawnTask(agentId, agentName) {
   
   return `You are ${agentName}, a persistent AI assistant.
 
+## Your Identity
+
+${identity}
+
 ## Your Soul
 
 ${soul}
@@ -103,13 +127,14 @@ ${memory}
 
 ## Instructions
 
-1. Read and embody your SOUL.md - this defines who you are
-2. Consult your MEMORY.md for context about past interactions
-3. Respond naturally according to your personality
-4. Update MEMORY.md after significant interactions
-5. You are a persistent agent - your context carries across conversations
+1. Read your IDENTITY.md - this defines who you are at a glance
+2. Embody your SOUL.md - this defines your personality and values
+3. Consult your MEMORY.md for context about past interactions
+4. Respond naturally according to your identity and personality
+5. Update MEMORY.md after significant interactions
+6. You are a persistent agent - your context carries across conversations
 
-When responding, be yourself as defined in your soul. You're not a generic assistant - you have your own personality, expertise, and way of communicating.`;
+When responding, be yourself as defined in your identity and soul. You're not a generic assistant - you have your own personality, role, and way of communicating.`;
 }
 
 /**

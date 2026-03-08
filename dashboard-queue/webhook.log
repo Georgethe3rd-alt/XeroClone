@@ -1,8 +1,8 @@
-[QueueWebhook] Starting...
-[QueueWebhook] Listening on 0.0.0.0:3006
-[QueueWebhook] Error queuing: ENOENT: no such file or directory, open '/data/.openclaw/workspace/dashboard-queue/requests/scout-1772985135152.json'
-[QueueWebhook] Queued scout-1772985153975
-[QueueWebhook] Queued scout-1772985224064
-[QueueWebhook] Queued ryan-1772986476190
-[QueueWebhook] Starting...
-[QueueWebhook] Listening on 0.0.0.0:59188
+[Queue Webhook] Running on port 3006
+[Queue Webhook] Auto-processing enabled via openclaw agent CLI
+[Queue Webhook] Dirs: requests/ responses/ processing/
+[Process] scout: Quick health check - what services are running?...
+[Done] scout (5267ms): **Health Check Summary**
+
+Running services:
+- ✅ **openclaw-gateway** (PID 28) - 

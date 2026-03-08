@@ -137,7 +137,19 @@ function processMessageRequests(pending) {
   return messages.map(({ file, request }) => {
     const { agentId, sessionKey, message, callbackUrl } = request;
     
-    // Verify session exists
+    // Special handling for George - main OpenClaw instance
+    if (agentId === 'george') {
+      return {
+        file,
+        agentId: 'george',
+        action: 'route_to_main',
+        message,
+        callbackUrl,
+        note: 'Route to main George session (not spawn)'
+      };
+    }
+    
+    // Verify session exists for other agents
     const actualSessionKey = sessionKey || sessions[agentId];
     if (!actualSessionKey) {
       console.error(`[Processor] No session for ${agentId}`);

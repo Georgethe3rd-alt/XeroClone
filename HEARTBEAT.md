@@ -1,11 +1,15 @@
----
-summary: "Workspace template for HEARTBEAT.md"
-read_when:
-  - Bootstrapping a workspace manually
----
+# Heartbeat Tasks
 
-# HEARTBEAT.md
+## Dashboard Message Processing
 
-# Keep this file empty (or with only comments) to skip heartbeat API calls.
+Check for messages from dashboard directed at me (George):
 
-# Completed: Meta Business Portfolio ✅ (done 2026-03-01)
+```bash
+node /data/.openclaw/workspace/process-george-messages.js
+```
+
+If pending messages exist, I'll process them and respond.
+
+## Frequency
+
+Run every 2-5 heartbeats (approximately every 5-15 minutes).

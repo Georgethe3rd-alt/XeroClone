@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenClaw Command Center</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a25;
+    --border: #2a2a3a;
+    --text: #e0e0e8;
+    --text-dim: #888;
+    --accent: #E31937;
+    --accent2: #6366f1;
+    --green: #22c55e;
+    --yellow: #eab308;
+    --blue: #3b82f6;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'SF Mono', 'Fira Code', monospace; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+
+  /* Login */
+  .login-overlay {
+    position: fixed; inset: 0; background: var(--bg); z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .login-overlay.hidden { display: none; }
+  .login-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 40px; width: 360px; text-align: center;
+  }
+  .login-box h1 { font-size: 24px; margin-bottom: 8px; }
+  .login-box .subtitle { color: var(--text-dim); margin-bottom: 24px; font-size: 13px; }
+  .login-box input {
+    width: 100%; padding: 12px 16px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-family: inherit; font-size: 14px; margin-bottom: 16px;
+  }
+  .login-box button {
+    width: 100%; padding: 12px; background: var(--accent); border: none; border-radius: 8px;
+    color: white; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .login-box button:hover { opacity: 0.9; }
+  .login-error { color: var(--accent); font-size: 12px; margin-top: 8px; }
+
+  /* Layout */
+  .app { display: flex; flex-direction: column; height: 100vh; }
+  
+  /* Header */
+  .header {
+    height: 60px; background: var(--surface); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; padding: 0 24px;
+  }
+  .header-left { display: flex; align-items: center; gap: 20px; }
+  .header h1 { font-size: 16px; letter-spacing: 1px; }
+  .header-right { display: flex; gap: 16px; align-items: center; }
+  .status-badge {
+    display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 6px;
+    background: var(--surface2); font-size: 12px;
+  }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+  }
+  .status-dot.online { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .status-dot.working { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); animation: pulse 1.5s infinite; }
+  .status-dot.idle { background: var(--blue); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* Tabs */
+  .tabs {
+    display: flex; gap: 8px; background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+  }
+  .tab {
+    padding: 12px 20px; cursor: pointer; border-bottom: 2px solid transparent;
+    transition: all 0.2s; font-size: 13px; font-weight: 500;
+  }
+  .tab:hover { background: var(--surface2); }
+  .tab.active { border-bottom-color: var(--accent); color: var(--accent); }
+
+  /* Main content */
+  .main { flex: 1; overflow-y: auto; padding: 24px; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Dashboard grid */
+  .dashboard-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px; margin-bottom: 24px;
+  }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px;
+  }
+  .card-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; color: var(--text-dim); }
+  .card-value { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+  .card-label { font-size: 12px; color: var(--text-dim); }
+
+  /* Job queue */
+  .job-list { display: flex; flex-direction: column; gap: 12px; }
+  .job-item {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .job-info { flex: 1; }
+  .job-agent { font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 4px; }
+  .job-task { font-size: 13px; color: var(--text); }
+  .job-time { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+  .job-status { padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .job-status.working { background: rgba(234, 179, 8, 0.2); color: var(--yellow); }
+  .job-status.done { background: rgba(34, 197, 94, 0.2); color: var(--green); }
+
+  /* Chat area */
+  .chat-container { height: calc(100vh - 240px); display: flex; flex-direction: column; }
+  .chat-header {
+    padding: 16px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px 12px 0 0; display: flex; align-items: center; justify-content: space-between;
+  }
+  .chat-area {
+    flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px;
+    background: var(--surface); border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+  }
+  .message {
+    max-width: 75%; padding: 12px 16px; border-radius: 12px; font-size: 13px;
+    line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+  }
+  .message.user {
+    align-self: flex-end; background: var(--accent); color: white;
+    border-bottom-right-radius: 4px;
+  }
+  .message.assistant {
+    align-self: flex-start; background: var(--surface2); border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+  .message .msg-meta {
+    font-size: 10px; color: var(--text-dim); margin-top: 6px; 
+  }
+  .message.user .msg-meta { color: rgba(255,255,255,0.6); }
+
+  .chat-input-area {
+    padding: 16px; border: 1px solid var(--border); border-radius: 0 0 12px 12px;
+    background: var(--surface2); display: flex; gap: 12px;
+  }
+  .chat-input-area input {
+    flex: 1; padding: 12px 16px; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-family: inherit; font-size: 13px;
+  }
+  .chat-input-area input:focus { outline: none; border-color: var(--accent); }
+  .chat-input-area button {
+    padding: 12px 24px; background: var(--accent); border: none; border-radius: 8px;
+    color: white; font-family: inherit; font-weight: 600; cursor: pointer;
+  }
+  .chat-input-area button:hover { opacity: 0.9; }
+  .chat-input-area button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Agent selector */
+  .agent-select {
+    display: flex; gap: 8px; margin-bottom: 20px;
+  }
+  .agent-btn {
+    padding: 10px 20px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 13px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .agent-btn:hover { background: var(--surface); }
+  .agent-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+  /* Empty state */
+  .empty-state {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    color: var(--text-dim); font-size: 14px; flex-direction: column; gap: 8px;
+  }
+  .empty-state .big { font-size: 48px; }
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h1>🦞 OpenClaw</h1>
+    <p class="subtitle">Command Center</p>
+    <input type="password" id="loginPass" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()">Enter</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<!-- App -->
+<div class="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <h1>🦞 OPENCLAW COMMAND CENTER</h1>
+    </div>
+    <div class="header-right">
+      <div class="status-badge" id="georgeStatus">
+        <span class="status-dot online"></span>
+        <span>George</span>
+      </div>
+      <div class="status-badge" id="ryanStatus">
+        <span class="status-dot idle"></span>
+        <span>Ryan</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('overview')">Overview</div>
+    <div class="tab" onclick="switchTab('chat')">Chat</div>
+    <div class="tab" onclick="switchTab('queue')">Job Queue</div>
+    <div class="tab" onclick="switchTab('projects')">Projects</div>
+  </div>
+
+  <!-- Main content -->
+  <div class="main">
+    <!-- Overview Tab -->
+    <div id="tab-overview" class="tab-content active">
+      <div class="dashboard-grid">
+        <div class="card">
+          <div class="card-title">AGENTS ONLINE</div>
+          <div class="card-value" id="agentsOnline">2</div>
+          <div class="card-label">George + Ryan</div>
+        </div>
+        <div class="card">
+          <div class="card-title">JOBS PROCESSED</div>
+          <div class="card-value" id="jobsProcessed">0</div>
+          <div class="card-label">Total completed tasks</div>
+        </div>
+        <div class="card">
+          <div class="card-title">ACTIVE PROJECTS</div>
+          <div class="card-value">2</div>
+          <div class="card-label">LoopVybz, Jarvis</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">RECENT ACTIVITY</div>
+        <div class="job-list" id="recentActivity">
+          <div class="empty-state">
+            <div class="big">📊</div>
+            <div>No recent activity</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Tab -->
+    <div id="tab-chat" class="tab-content">
+      <div class="agent-select">
+        <div class="agent-btn active" onclick="selectChatAgent('ryan')">
+          <span class="status-dot idle" id="chatRyanDot"></span>
+          <span>Ryan (Coding Agent)</span>
+        </div>
+        <div class="agent-btn" onclick="selectChatAgent('george')" style="opacity: 0.5; cursor: not-allowed;">
+          <span class="status-dot online"></span>
+          <span>George (Use Telegram)</span>
+        </div>
+      </div>
+
+      <div class="chat-container">
+        <div class="chat-header">
+          <div>
+            <strong id="chatAgentName">Ryan</strong>
+            <span style="font-size: 11px; color: var(--text-dim); margin-left: 8px;">Claude Code</span>
+          </div>
+          <div class="status-badge">
+            <span class="status-dot idle" id="chatStatusDot"></span>
+            <span id="chatAgentStatus">idle</span>
+          </div>
+        </div>
+        <div class="chat-area" id="chatArea">
+          <div class="empty-state">
+            <div class="big">💬</div>
+            <div>Send Ryan a coding task</div>
+          </div>
+        </div>
+        <div class="chat-input-area">
+          <input id="chatInput" placeholder="Message Ryan..." onkeydown="if(event.key==='Enter')handleSend()">
+          <button onclick="handleSend()" id="sendBtn">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Queue Tab -->
+    <div id="tab-queue" class="tab-content">
+      <div class="card">
+        <div class="card-title">JOB QUEUE</div>
+        <div class="job-list" id="jobQueue">
+          <div class="empty-state">
+            <div class="big">📋</div>
+            <div>No jobs in queue</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Projects Tab -->
+    <div id="tab-projects" class="tab-content">
+      <div class="dashboard-grid">
+        <div class="card">
+          <div class="card-title">LOOPVYBZ</div>
+          <div style="font-size: 14px; line-height: 1.6; color: var(--text);">
+            <div style="margin-bottom: 12px;">
+              <strong>Status:</strong> <span style="color: var(--green);">Running</span><br>
+              <strong>Location:</strong> 187.77.217.138<br>
+              <strong>Services:</strong> API, Admin, Web
+            </div>
+            <div style="font-size: 12px; color: var(--text-dim);">
+              Caribbean news platform with AI video generation
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">JARVIS</div>
+          <div style="font-size: 14px; line-height: 1.6; color: var(--text);">
+            <div style="margin-bottom: 12px;">
+              <strong>Status:</strong> <span style="color: var(--green);">Running</span><br>
+              <strong>Domain:</strong> jarvisproject.ai<br>
+              <strong>Port:</strong> 3003
+            </div>
+            <div style="font-size: 12px; color: var(--text-dim);">
+              Multi-tenant AI assistant via WhatsApp
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let token = localStorage.getItem('dash_token');
+let ws = null;
+let activeAgent = 'ryan';
+let agentsState = {};
+let activeTab = 'overview';
+
+// ── Auth ──
+async function doLogin() {
+  const pass = document.getElementById('loginPass').value;
+  try {
+    const resp = await fetch('/api/auth', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ password: pass })
+    });
+    if (!resp.ok) throw new Error('Invalid password');
+    const data = await resp.json();
+    token = data.token;
+    localStorage.setItem('dash_token', token);
+    document.getElementById('loginOverlay').classList.add('hidden');
+    connectWS();
+  } catch(e) {
+    document.getElementById('loginError').textContent = e.message;
+  }
+}
+
+async function checkAuth() {
+  if (!token) return;
+  try {
+    const resp = await fetch('/api/agents', { headers: { 'Authorization': 'Bearer ' + token }});
+    if (resp.ok) {
+      document.getElementById('loginOverlay').classList.add('hidden');
+      connectWS();
+    } else {
+      localStorage.removeItem('dash_token');
+      token = null;
+    }
+  } catch(e) {}
+}
+
+// ── WebSocket ──
+function connectWS() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}/ws`);
+  
+  ws.onmessage = (evt) => {
+    const data = JSON.parse(evt.data);
+    
+    if (data.type === 'init') {
+      agentsState = data.agents;
+      updateStatus();
+      renderChat();
+      updateOverview();
+    }
+    
+    if (data.type === 'message') {
+      if (!agentsState[data.agent]) return;
+      agentsState[data.agent].messages.push(data.message);
+      if (activeAgent === data.agent && activeTab === 'chat') renderChat();
+      updateOverview();
+    }
+    
+    if (data.type === 'status') {
+      if (!agentsState[data.agent]) return;
+      agentsState[data.agent].status = data.status;
+      if (data.task) agentsState[data.agent].tasks.push({ task: data.task, startedAt: Date.now() });
+      updateStatus();
+    }
+  };
+  
+  ws.onclose = () => setTimeout(connectWS, 3000);
+}
+
+function sendMessage(agent, message) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify({ type: 'chat', agent, message }));
+}
+
+// ── UI Updates ──
+function updateStatus() {
+  ['george', 'ryan'].forEach(id => {
+    const a = agentsState[id];
+    if (!a) return;
+    const el = document.getElementById(id + 'Status');
+    if (el) {
+      el.querySelector('.status-dot').className = `status-dot ${a.status}`;
+    }
+  });
+  
+  if (activeAgent) {
+    const a = agentsState[activeAgent];
+    if (a) {
+      ['chatStatusDot', 'chatRyanDot'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.className = `status-dot ${a.status}`;
+      });
+      const statusEl = document.getElementById('chatAgentStatus');
+      if (statusEl) statusEl.textContent = a.status;
+    }
+  }
+}
+
+function updateOverview() {
+  let totalJobs = 0;
+  Object.values(agentsState).forEach(a => totalJobs += a.tasks?.length || 0);
+  const el = document.getElementById('jobsProcessed');
+  if (el) el.textContent = totalJobs;
+  
+  // Recent activity
+  const activity = [];
+  Object.entries(agentsState).forEach(([id, a]) => {
+    (a.tasks || []).slice(-5).forEach(t => {
+      activity.push({ agent: id, task: t.task || t, time: t.startedAt || Date.now(), status: 'done' });
+    });
+  });
+  activity.sort((a,b) => b.time - a.time);
+  
+  const list = document.getElementById('recentActivity');
+  if (list) {
+    if (activity.length === 0) {
+      list.innerHTML = '<div class="empty-state"><div class="big">📊</div><div>No recent activity</div></div>';
+    } else {
+      list.innerHTML = activity.slice(0, 5).map(j => `
+        <div class="job-item">
+          <div class="job-info">
+            <div class="job-agent">${agentsState[j.agent]?.name || j.agent}</div>
+            <div class="job-task">${escapeHtml((j.task || '').substring(0, 80))}</div>
+            <div class="job-time">${new Date(j.time).toLocaleTimeString()}</div>
+          </div>
+          <div class="job-status ${j.status}">${j.status}</div>
+        </div>
+      `).join('');
+    }
+  }
+}
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.tab:nth-child(${['overview','chat','queue','projects'].indexOf(tab)+1})`).classList.add('active');
+  
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  
+  if (tab === 'chat') renderChat();
+  if (tab === 'overview') updateOverview();
+}
+
+function selectChatAgent(agent) {
+  if (agent === 'george') return; // George is read-only
+  activeAgent = agent;
+  renderChat();
+}
+
+function renderChat() {
+  const a = agentsState[activeAgent];
+  if (!a) return;
+  
+  const area = document.getElementById('chatArea');
+  if (!area) return;
+  
+  if (a.messages.length === 0) {
+    area.innerHTML = '<div class="empty-state"><div class="big">💬</div><div>Send Ryan a coding task</div></div>';
+  } else {
+    area.innerHTML = a.messages.map(m => `
+      <div class="message ${m.role}">
+        ${escapeHtml(m.content)}
+        <div class="msg-meta">${new Date(m.ts).toLocaleTimeString()}</div>
+      </div>
+    `).join('');
+    area.scrollTop = area.scrollHeight;
+  }
+}
+
+function handleSend() {
+  const input = document.getElementById('chatInput');
+  if (!input?.value.trim() || !activeAgent) return;
+  if (activeAgent === 'george') return;
+  
+  const sendBtn = document.getElementById('sendBtn');
+  sendBtn.disabled = true;
+  sendBtn.textContent = 'Sending...';
+  
+  sendMessage(activeAgent, input.value.trim());
+  input.value = '';
+  
+  setTimeout(() => {
+    sendBtn.disabled = false;
+    sendBtn.textContent = 'Send';
+  }, 2000);
+}
+
+function escapeHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Init ──
+checkAuth();
+</script>
+</body>
+</html>

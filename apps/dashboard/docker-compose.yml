@@ -8,10 +8,10 @@ services:
       - "80:80"
     environment:
       - PORT=80
-      - ANTHROPIC_API_KEY=<ANTHROPIC_API_KEY>
-      - TELEGRAM_TOKEN=<TELEGRAM_BOT_TOKEN>
-      - TELEGRAM_CHAT_ID=8383924559
-      - DASH_PASSWORD=Wayne2026#
+      - ANTHROPIC_API_KEY=<your-api-key-here>
+      - TELEGRAM_TOKEN=<your-telegram-token-here>
+      - TELEGRAM_CHAT_ID=<your-chat-id-here>
+      - DASH_PASSWORD=<your-password-here>
     restart: unless-stopped
     networks:
       - dashboard-net

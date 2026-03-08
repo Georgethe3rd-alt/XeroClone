@@ -10,10 +10,10 @@ ExecStart=/usr/bin/node /opt/openclaw-dashboard/server.js
 Restart=always
 RestartSec=10
 Environment="PORT=80"
-Environment="ANTHROPIC_API_KEY=<ANTHROPIC_API_KEY>"
-Environment="TELEGRAM_TOKEN=<TELEGRAM_BOT_TOKEN>"
-Environment="TELEGRAM_CHAT_ID=8383924559"
-Environment="DASH_PASSWORD=Wayne2026#"
+Environment="ANTHROPIC_API_KEY=<your-api-key-here>"
+Environment="TELEGRAM_TOKEN=<your-telegram-token-here>"
+Environment="TELEGRAM_CHAT_ID=<your-chat-id-here>"
+Environment="DASH_PASSWORD=<your-password-here>"
 
 [Install]
 WantedBy=multi-user.target

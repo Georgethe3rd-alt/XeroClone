@@ -1,7 +1,30 @@
 {
   "dependencies": {
+    "axios": "^1.13.6",
     "bcryptjs": "^3.0.3",
+    "express": "^5.2.1",
     "pg": "^8.19.0",
     "qrcode": "^1.5.4"
-  }
+  },
+  "name": "workspace",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.module.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://Georgethe3rd-alt:<GITHUB_PAT>@github.com/Georgethe3rd-alt/Georgethe3rd.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Georgethe3rd-alt/Georgethe3rd/issues"
+  },
+  "homepage": "https://github.com/Georgethe3rd-alt/Georgethe3rd#readme"
 }

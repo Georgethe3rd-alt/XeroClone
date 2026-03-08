@@ -1,0 +1,9 @@
+[Dashboard Webhook] Running on port 3001
+[Dashboard Webhook] Endpoints:
+  POST /webhook/agent/spawn
+  POST /webhook/agent/message
+  GET  /webhook/agent/status
+  GET  /webhook/agent/:id/config
+  PUT  /webhook/agent/:id/config
+
+Waiting for George to wire up sessions_spawn and sessions_send...

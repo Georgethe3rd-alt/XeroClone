@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenClaw Command Center</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a25;
+    --border: #2a2a3a;
+    --text: #e0e0e8;
+    --text-dim: #888;
+    --accent: #E31937;
+    --accent2: #6366f1;
+    --green: #22c55e;
+    --yellow: #eab308;
+    --blue: #3b82f6;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'SF Mono', 'Fira Code', monospace; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+
+  /* Login */
+  .login-overlay {
+    position: fixed; inset: 0; background: var(--bg); z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .login-overlay.hidden { display: none; }
+  .login-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 40px; width: 360px; text-align: center;
+  }
+  .login-box h1 { font-size: 24px; margin-bottom: 8px; }
+  .login-box .subtitle { color: var(--text-dim); margin-bottom: 24px; font-size: 13px; }
+  .login-box input {
+    width: 100%; padding: 12px 16px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-family: inherit; font-size: 14px; margin-bottom: 16px;
+  }
+  .login-box button {
+    width: 100%; padding: 12px; background: var(--accent); border: none; border-radius: 8px;
+    color: white; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .login-box button:hover { opacity: 0.9; }
+  .login-error { color: var(--accent); font-size: 12px; margin-top: 8px; }
+
+  /* Layout */
+  .app { display: flex; height: 100vh; }
+  .sidebar {
+    width: 260px; background: var(--surface); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; flex-shrink: 0;
+  }
+  .sidebar-header {
+    padding: 20px; border-bottom: 1px solid var(--border);
+  }
+  .sidebar-header h1 { font-size: 16px; letter-spacing: 1px; }
+  .sidebar-header .tagline { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+  .agent-list { flex: 1; overflow-y: auto; padding: 12px; }
+  .agent-card {
+    padding: 14px; border-radius: 8px; cursor: pointer; margin-bottom: 8px;
+    border: 1px solid transparent; transition: all 0.2s;
+  }
+  .agent-card:hover { background: var(--surface2); }
+  .agent-card.active { background: var(--surface2); border-color: var(--accent); }
+  .agent-card .agent-name { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  .agent-card .agent-type { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+  }
+  .status-dot.online { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .status-dot.working { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); animation: pulse 1.5s infinite; }
+  .status-dot.idle { background: var(--blue); }
+  .status-dot.offline { background: #555; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* Main */
+  .main { flex: 1; display: flex; flex-direction: column; }
+  .main-header {
+    padding: 16px 24px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .main-header h2 { font-size: 18px; }
+  .main-header .agent-status { font-size: 12px; color: var(--text-dim); }
+
+  /* Chat area */
+  .chat-area {
+    flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px;
+  }
+  .message {
+    max-width: 75%; padding: 12px 16px; border-radius: 12px; font-size: 13px;
+    line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+  }
+  .message.user {
+    align-self: flex-end; background: var(--accent); color: white;
+    border-bottom-right-radius: 4px;
+  }
+  .message.assistant {
+    align-self: flex-start; background: var(--surface2); border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+  .message .msg-meta {
+    font-size: 10px; color: var(--text-dim); margin-top: 6px; 
+  }
+  .message.user .msg-meta { color: rgba(255,255,255,0.6); }
+
+  .stream-output {
+    align-self: flex-start; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 16px; font-size: 12px; line-height: 1.5;
+    white-space: pre-wrap; max-width: 85%; color: var(--yellow); max-height: 300px; overflow-y: auto;
+  }
+
+  /* Input */
+  .chat-input-area {
+    padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 12px;
+  }
+  .chat-input-area input {
+    flex: 1; padding: 12px 16px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-family: inherit; font-size: 13px;
+  }
+  .chat-input-area input:focus { outline: none; border-color: var(--accent); }
+  .chat-input-area button {
+    padding: 12px 24px; background: var(--accent); border: none; border-radius: 8px;
+    color: white; font-family: inherit; font-weight: 600; cursor: pointer;
+  }
+  .chat-input-area button:hover { opacity: 0.9; }
+
+  /* Empty state */
+  .empty-state {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    color: var(--text-dim); font-size: 14px; flex-direction: column; gap: 8px;
+  }
+  .empty-state .big { font-size: 48px; }
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h1>🦞 OpenClaw</h1>
+    <p class="subtitle">Command Center</p>
+    <input type="password" id="loginPass" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()">Enter</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<!-- App -->
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h1>🦞 COMMAND CENTER</h1>
+      <div class="tagline">Multi-Agent Dashboard</div>
+    </div>
+    <div class="agent-list" id="agentList"></div>
+  </div>
+  <div class="main">
+    <div id="mainContent">
+      <div class="empty-state">
+        <div class="big">👑</div>
+        <div>Select an agent to begin</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let token = localStorage.getItem('dash_token');
+let ws = null;
+let activeAgent = null;
+let agentsState = {};
+let streamBuffer = '';
+
+// ── Auth ──
+async function doLogin() {
+  const pass = document.getElementById('loginPass').value;
+  try {
+    const resp = await fetch('/api/auth', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ password: pass })
+    });
+    if (!resp.ok) throw new Error('Invalid password');
+    const data = await resp.json();
+    token = data.token;
+    localStorage.setItem('dash_token', token);
+    document.getElementById('loginOverlay').classList.add('hidden');
+    connectWS();
+  } catch(e) {
+    document.getElementById('loginError').textContent = e.message;
+  }
+}
+
+async function checkAuth() {
+  if (!token) return;
+  try {
+    const resp = await fetch('/api/agents', { headers: { 'Authorization': 'Bearer ' + token }});
+    if (resp.ok) {
+      document.getElementById('loginOverlay').classList.add('hidden');
+      connectWS();
+    } else {
+      localStorage.removeItem('dash_token');
+      token = null;
+    }
+  } catch(e) {}
+}
+
+// ── WebSocket ──
+function connectWS() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}/ws`);
+  
+  ws.onmessage = (evt) => {
+    const data = JSON.parse(evt.data);
+    
+    if (data.type === 'init') {
+      agentsState = data.agents;
+      renderAgentList();
+      if (activeAgent) renderChat();
+    }
+    
+    if (data.type === 'message') {
+      if (!agentsState[data.agent]) return;
+      agentsState[data.agent].messages.push(data.message);
+      if (activeAgent === data.agent) renderChat();
+    }
+    
+    if (data.type === 'status') {
+      if (!agentsState[data.agent]) return;
+      agentsState[data.agent].status = data.status;
+      if (data.task) agentsState[data.agent].tasks.push({ task: data.task });
+      renderAgentList();
+      if (activeAgent === data.agent) renderHeader();
+    }
+    
+    if (data.type === 'stream') {
+      streamBuffer += data.chunk;
+      if (activeAgent === data.agent) renderStream();
+    }
+  };
+  
+  ws.onclose = () => setTimeout(connectWS, 3000);
+}
+
+function sendMessage(agent, message) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify({ type: 'chat', agent, message }));
+  streamBuffer = '';
+}
+
+// ── Render ──
+function renderAgentList() {
+  const el = document.getElementById('agentList');
+  el.innerHTML = Object.entries(agentsState).map(([id, a]) => `
+    <div class="agent-card ${activeAgent === id ? 'active' : ''}" onclick="selectAgent('${id}')">
+      <div class="agent-name">
+        <span class="status-dot ${a.status}"></span>
+        ${a.name}
+      </div>
+      <div class="agent-type">${a.type} · ${a.status}</div>
+    </div>
+  `).join('');
+}
+
+function selectAgent(id) {
+  activeAgent = id;
+  streamBuffer = '';
+  renderAgentList();
+  renderChat();
+}
+
+function renderHeader() {
+  const header = document.querySelector('.main-header');
+  if (!header || !activeAgent) return;
+  const a = agentsState[activeAgent];
+  header.querySelector('h2').textContent = a.name;
+  header.querySelector('.agent-status').textContent = `${a.type} · ${a.status}`;
+}
+
+function renderChat() {
+  const a = agentsState[activeAgent];
+  if (!a) return;
+  
+  const main = document.getElementById('mainContent');
+  main.innerHTML = `
+    <div class="main-header">
+      <h2>${a.name}</h2>
+      <span class="agent-status">${a.type} · ${a.status}</span>
+    </div>
+    <div class="chat-area" id="chatArea">
+      ${a.messages.map(m => `
+        <div class="message ${m.role}">
+          ${escapeHtml(m.content)}
+          <div class="msg-meta">${new Date(m.ts).toLocaleTimeString()}</div>
+        </div>
+      `).join('')}
+      ${streamBuffer ? `<div class="stream-output" id="streamOut">${escapeHtml(streamBuffer)}</div>` : ''}
+    </div>
+    <div class="chat-input-area">
+      <input id="chatInput" placeholder="Message ${a.name}..." onkeydown="if(event.key==='Enter')handleSend()">
+      <button onclick="handleSend()">Send</button>
+    </div>
+  `;
+  
+  const area = document.getElementById('chatArea');
+  area.scrollTop = area.scrollHeight;
+  document.getElementById('chatInput')?.focus();
+}
+
+function renderStream() {
+  let el = document.getElementById('streamOut');
+  if (!el) {
+    const area = document.getElementById('chatArea');
+    if (!area) return;
+    el = document.createElement('div');
+    el.className = 'stream-output';
+    el.id = 'streamOut';
+    area.appendChild(el);
+  }
+  el.textContent = streamBuffer;
+  el.scrollTop = el.scrollHeight;
+  const area = document.getElementById('chatArea');
+  if (area) area.scrollTop = area.scrollHeight;
+}
+
+function handleSend() {
+  const input = document.getElementById('chatInput');
+  if (!input?.value.trim() || !activeAgent) return;
+  sendMessage(activeAgent, input.value.trim());
+  input.value = '';
+}
+
+function escapeHtml(s) {
+  return s?.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') || '';
+}
+
+// ── Init ──
+checkAuth();
+</script>
+</body>
+</html>

@@ -149,3 +149,62 @@ Key lesson: They didn't just respond to requests - they anticipated needs and ha
 - SSH deploy key: loopvybz_key (separate from Jarvis key)
 
 _Last updated: 2026-03-07_
+
+## Critical Lessons Learned
+
+### TEST BEFORE REPORTING (2026-03-08)
+**What happened**: After fixing dashboard crash, told Wayne "try logging in - should work" WITHOUT testing it myself first.
+
+**Wayne's feedback**: "I hate having to check something after you've fixed it... without you running your own checks live. You log in and do the check, and show it's working before you tell me to go check it."
+
+**The lesson**: TEST BEFORE REPORTING. Always verify fixes yourself before claiming success.
+
+**Pattern going forward**:
+1. Make fix
+2. Test thoroughly myself
+3. Show proof/evidence
+4. Report success with verification results
+5. Never waste Wayne's time with unverified fixes
+
+**Why it matters**: Wastes Wayne's time if it doesn't work. Shows lack of thoroughness. Undermines trust in my competence.
+
+### VPS Root Access (2026-03-08)
+- **Server**: 187.77.8.165 (srv1353804)
+- **Root password**: #Amariiwayne2018
+- **Use sshpass**: `sshpass -p '#Amariiwayne2018' ssh root@187.77.8.165`
+- Deployed Ollama proxy using this access
+
+## Ollama Local LLM Integration (2026-03-08)
+
+**Problem**: Wayne wanted to use local Ollama models to save on API costs, but OpenClaw 2026.3.1 doesn't natively support Ollama.
+
+**Solution**: Built OpenAI-compatible proxy that translates between OpenAI API format and Ollama format.
+
+**Architecture**:
+- Ollama running on VPS host (localhost:11434)
+- Proxy running on VPS host (port 11435)
+- OpenClaw container reaches proxy at 172.17.0.1:11435
+- Proxy forwards requests to Ollama and returns OpenAI-compatible responses
+
+**Files Created**: `/data/.openclaw/workspace/ollama-proxy/`
+- ollama-proxy.js - Express server
+- ollama-proxy.service - Systemd service
+- deploy.sh - Automated deployment
+- test-proxy.sh - Testing script
+- TEST-RESULTS.md - Integration test results
+
+**Deployment**:
+1. Installed Ollama on VPS (ollama pull llama3.2:1b)
+2. Deployed proxy to /root/dashboard-host/ollama-proxy.js
+3. Configured as systemd service (auto-start)
+4. Tested connectivity from OpenClaw container
+5. Updated OpenClaw config with new provider: ollama-local
+6. Model available: ollama-local/llama3.2:1b (free, zero cost)
+
+**Status**: Proxy deployed and tested, config updated with backup created. Awaiting gateway restart to activate.
+
+**Cost Savings**: Estimated $8-10/month by using local model for heartbeats and simple tasks.
+
+---
+
+_Last updated: 2026-03-08 10:20 EDT_

@@ -40,6 +40,13 @@ Skills define _how_ tools work. This file is for _your_ specifics — the stuff 
 - **Service**: Natural text-to-speech synthesis
 - **Status**: API tested and working, config needs manual patching
 
+## D-ID
+
+- **API Key**: `YXdheW5lMzNAZ21haWwuY29t:BXFeXZ5Wva_xDrhkVfQ2j`
+- **Account**: awayne33@gmail.com
+- **Service**: Talking head video generation (Talks API)
+- **Used by**: LoopVybz video generation
+
 ## Webhooks
 - Base path: `/hooks`
 - AgentMail webhook: `/hooks/agentmail`
@@ -61,3 +68,9 @@ Skills define _how_ tools work. This file is for _your_ specifics — the stuff 
 - **Status**: ✅ Pushed and working
 
 ---
+## OpenAI
+
+- **API Key**: `<OPENAI_API_KEY>`
+- **Services**: O3 Mini, GPT-4o Mini, GPT-4.1, GPT-4 Turbo
+- **Usage**: Brian (O3 Mini), Keisha (GPT-4o Mini) on dashboard
+- **Status**: ✅ Configured in dashboard service

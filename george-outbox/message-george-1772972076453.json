@@ -1,0 +1,6 @@
+{
+  "type": "agent_response",
+  "agentId": "george",
+  "message": "I'm here, sir. Message received from the dashboard. The system is working - your message reached my inbox and I'm responding now.",
+  "timestamp": 1772972122035
+}

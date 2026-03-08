@@ -1379,6 +1379,18 @@ function deleteTask(id){
 }
 </script>
 
+<!-- Voice Assistant Overlay -->
+<div id="voiceOverlay" style="display:none;position:fixed;bottom:80px;right:24px;background:var(--surface);border:1px solid var(--accent);border-radius:16px;padding:16px 24px;z-index:900;box-shadow:0 8px 32px rgba(0,0,0,0.4);min-width:250px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+    <div id="voicePulse" style="width:12px;height:12px;border-radius:50%;background:var(--red);animation:pulse 1s infinite;"></div>
+    <span id="voiceStateText" style="font-size:13px;font-weight:600;color:var(--text);">Listening...</span>
+  </div>
+  <div id="voiceTranscript" style="font-size:12px;color:var(--text-dim);font-style:italic;min-height:20px;">...</div>
+</div>
+<style>
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.5;transform:scale(1.2);} }
+</style>
+
 <!-- Agent Config Modal --><div class="agent-config-modal hidden" id="agentConfigModal"></div>
 
 <script>
@@ -2467,73 +2479,294 @@ function handleLiveView(data) {
     }
   }
 }
-// Voice input for chat
-let recognition = null;
-let isRecording = false;
+// ─── Voice Assistant: "Hey George" Wake Word ───────────────────
+let voiceRecognition = null;
+let voiceState = 'idle'; // idle | listening | active | speaking
+let voiceSynth = window.speechSynthesis;
+let voiceEnabled = false;
+let wakeWordAgent = 'george'; // Default agent for voice
 
 function initVoiceInput() {
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    console.log('Speech recognition not supported');
+    console.log('[Voice] Speech recognition not supported');
+    return;
+  }
+  console.log('[Voice] Initializing wake word assistant...');
+}
+
+function startVoiceAssistant() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    alert('Speech recognition not supported in this browser. Try Chrome.');
     return;
   }
   
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  recognition = new SpeechRecognition();
-  recognition.continuous = false;
-  recognition.interimResults = false;
-  recognition.lang = 'en-US';
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  voiceRecognition = new SR();
+  voiceRecognition.continuous = true;
+  voiceRecognition.interimResults = true;
+  voiceRecognition.lang = 'en-US';
   
-  recognition.onresult = (event) => {
-    const transcript = event.results[0][0].transcript;
-    const input = document.getElementById('chatInput');
-    if (input) {
-      input.value = transcript;
-    }
-    isRecording = false;
-    updateVoiceButton();
-  };
+  voiceRecognition.onresult = handleVoiceResult;
+  voiceRecognition.onerror = handleVoiceError;
+  voiceRecognition.onend = handleVoiceEnd;
   
-  recognition.onerror = (event) => {
-    console.error('Speech recognition error:', event.error);
-    isRecording = false;
-    updateVoiceButton();
-  };
-  
-  recognition.onend = () => {
-    isRecording = false;
-    updateVoiceButton();
-  };
+  voiceRecognition.start();
+  voiceEnabled = true;
+  voiceState = 'listening';
+  updateVoiceUI();
+  addLog('info', 'Voice assistant activated — say "Hey George"');
+}
+
+function stopVoiceAssistant() {
+  if (voiceRecognition) {
+    voiceRecognition.stop();
+    voiceRecognition = null;
+  }
+  voiceEnabled = false;
+  voiceState = 'idle';
+  updateVoiceUI();
+  addLog('info', 'Voice assistant deactivated');
 }
 
 function toggleVoiceInput() {
-  if (!recognition) {
-    initVoiceInput();
-    if (!recognition) {
-      alert('Voice input not supported in this browser');
-      return;
+  if (voiceEnabled) {
+    stopVoiceAssistant();
+  } else {
+    startVoiceAssistant();
+  }
+}
+
+let activeTranscript = '';
+let wakeWordDetected = false;
+let silenceTimer = null;
+
+function handleVoiceResult(event) {
+  let interim = '';
+  let final = '';
+  
+  for (let i = event.resultIndex; i < event.results.length; i++) {
+    const transcript = event.results[i][0].transcript;
+    if (event.results[i].isFinal) {
+      final += transcript;
+    } else {
+      interim += transcript;
     }
   }
   
-  if (isRecording) {
-    recognition.stop();
-    isRecording = false;
-  } else {
-    recognition.start();
-    isRecording = true;
+  const combined = (final + interim).toLowerCase().trim();
+  
+  // Show what we're hearing
+  const indicator = document.getElementById('voiceTranscript');
+  if (indicator) indicator.textContent = combined || '...';
+  
+  // Wake word detection
+  if (!wakeWordDetected) {
+    if (combined.includes('hey george') || combined.includes('hey gorge') || combined.includes('a george') || combined.includes('hey josh')) {
+      wakeWordDetected = true;
+      voiceState = 'active';
+      activeTranscript = '';
+      updateVoiceUI();
+      
+      // Play a subtle acknowledgment
+      speakResponse('Yes sir?');
+      
+      // Remove wake word from transcript
+      const afterWake = combined.replace(/.*hey\s*(george|gorge|josh)/i, '').trim();
+      if (afterWake.length > 3) {
+        activeTranscript = afterWake;
+      }
+      
+      addLog('info', 'Wake word detected — listening for command');
+      return;
+    }
+    return; // Keep listening for wake word
   }
   
-  updateVoiceButton();
-}
-
-function updateVoiceButton() {
-  const btn = document.getElementById('voiceBtn');
-  if (btn) {
-    btn.textContent = isRecording ? '⏹️' : '🎤';
-    btn.style.background = isRecording ? 'var(--red)' : 'var(--surface2)';
+  // Active mode — collecting the command
+  if (final) {
+    activeTranscript += ' ' + final;
+    activeTranscript = activeTranscript.trim();
+  }
+  
+  // Reset silence timer — send after 2s of silence
+  clearTimeout(silenceTimer);
+  if (activeTranscript.length > 2) {
+    silenceTimer = setTimeout(() => {
+      if (activeTranscript.trim()) {
+        processVoiceCommand(activeTranscript.trim());
+        activeTranscript = '';
+        wakeWordDetected = false;
+        voiceState = 'listening';
+        updateVoiceUI();
+      }
+    }, 2000);
   }
 }
 
-// Initialize on page load
+function handleVoiceError(event) {
+  if (event.error === 'no-speech' || event.error === 'aborted') {
+    // Normal — just restart
+    return;
+  }
+  console.error('[Voice] Error:', event.error);
+  if (event.error === 'not-allowed') {
+    addLog('error', 'Microphone access denied. Please allow microphone access.');
+    stopVoiceAssistant();
+  }
+}
+
+function handleVoiceEnd() {
+  // Auto-restart if still enabled
+  if (voiceEnabled) {
+    setTimeout(() => {
+      if (voiceEnabled && voiceRecognition) {
+        try { voiceRecognition.start(); } catch(e) {}
+      }
+    }, 100);
+  }
+}
+
+async function processVoiceCommand(command) {
+  addLog('info', 'Voice command: ' + command);
+  voiceState = 'speaking';
+  updateVoiceUI();
+  
+  // Detect if addressing a specific agent
+  let targetAgent = wakeWordAgent;
+  const agentNames = {scout:'scout', ryan:'ryan', brian:'brian', keisha:'keisha', george:'george'};
+  for (const [name, id] of Object.entries(agentNames)) {
+    if (command.toLowerCase().startsWith('ask ' + name) || command.toLowerCase().startsWith('tell ' + name)) {
+      targetAgent = id;
+      command = command.replace(new RegExp('^(ask|tell)\\s+' + name + '\\s*', 'i'), '').trim();
+      break;
+    }
+  }
+  
+  // Save to chat
+  if (!agentsState[targetAgent]) agentsState[targetAgent] = {messages:[]};
+  agentsState[targetAgent].messages = agentsState[targetAgent].messages || [];
+  agentsState[targetAgent].messages.push({role:'user', content: '[Voice] ' + command, ts: new Date().toISOString()});
+  
+  // Send to agent API
+  try {
+    const resp = await fetch('/api/chat/' + targetAgent, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: command})
+    });
+    const data = await resp.json();
+    
+    // Poll for response
+    if (data.requestId) {
+      pollVoiceResponse(data.requestId, targetAgent);
+    }
+  } catch(e) {
+    speakResponse("Sorry, I couldn't process that. Try again.");
+    voiceState = 'listening';
+    updateVoiceUI();
+  }
+}
+
+async function pollVoiceResponse(requestId, agentId) {
+  let attempts = 0;
+  const poll = setInterval(async () => {
+    attempts++;
+    try {
+      const resp = await fetch('/api/status/' + requestId);
+      const data = await resp.json();
+      if (data.status === 'completed' && data.response) {
+        clearInterval(poll);
+        
+        // Speak the response
+        speakResponse(data.response);
+        
+        // Update chat
+        if (agentsState[agentId]) {
+          agentsState[agentId].messages.push({role:'assistant', content: data.response, ts: new Date().toISOString()});
+          if (activeAgent === agentId && activeTab === 'chat') renderChat();
+        }
+      }
+    } catch(e) {}
+    
+    if (attempts > 60) {
+      clearInterval(poll);
+      speakResponse("The agent is taking too long. Try again later.");
+      voiceState = 'listening';
+      updateVoiceUI();
+    }
+  }, 2000);
+}
+
+function speakResponse(text) {
+  // Strip markdown for speech
+  const cleanText = text.replace(/\*\*/g, '').replace(/[#*_`]/g, '').replace(/\n+/g, '. ').replace(/\[.*?\]/g, '').substring(0, 500);
+  
+  if (voiceSynth) {
+    voiceSynth.cancel();
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.rate = 1.0;
+    utterance.pitch = 0.9;
+    utterance.volume = 1.0;
+    
+    // Try to find a good English voice
+    const voices = voiceSynth.getVoices();
+    const preferred = voices.find(v => v.name.includes('Google UK English Male') || v.name.includes('Daniel'));
+    if (preferred) utterance.voice = preferred;
+    
+    utterance.onend = () => {
+      voiceState = 'listening';
+      updateVoiceUI();
+    };
+    
+    voiceSynth.speak(utterance);
+  }
+}
+
+function updateVoiceUI() {
+  const btn = document.getElementById('voiceBtn');
+  const overlay = document.getElementById('voiceOverlay');
+  
+  if (btn) {
+    switch(voiceState) {
+      case 'idle':
+        btn.textContent = '🎤';
+        btn.style.background = 'var(--surface2)';
+        btn.title = 'Start voice assistant';
+        break;
+      case 'listening':
+        btn.textContent = '👂';
+        btn.style.background = 'rgba(0,255,136,0.2)';
+        btn.title = 'Listening for "Hey George"...';
+        break;
+      case 'active':
+        btn.textContent = '🔴';
+        btn.style.background = 'rgba(255,68,68,0.3)';
+        btn.style.animation = 'pulse 1s infinite';
+        btn.title = 'Listening for command...';
+        break;
+      case 'speaking':
+        btn.textContent = '🔊';
+        btn.style.background = 'rgba(0,170,255,0.2)';
+        btn.style.animation = '';
+        btn.title = 'Speaking...';
+        break;
+    }
+  }
+  
+  if (overlay) {
+    overlay.style.display = (voiceState === 'active' || voiceState === 'speaking') ? 'flex' : 'none';
+    const stateText = document.getElementById('voiceStateText');
+    if (stateText) {
+      switch(voiceState) {
+        case 'active': stateText.textContent = 'Listening... speak your command'; break;
+        case 'speaking': stateText.textContent = 'Responding...'; break;
+        default: stateText.textContent = '';
+      }
+    }
+  }
+}
+
+// Initialize
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initVoiceInput);
 } else {

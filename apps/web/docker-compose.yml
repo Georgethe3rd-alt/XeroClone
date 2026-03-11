@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: wipayroll-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: paycraft
+      POSTGRES_PASSWORD: paycraft_secure_2026
+      POSTGRES_DB: paycraft_prod
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  app:
+    build: .
+    container_name: wipayroll-app
+    restart: unless-stopped
+    ports:
+      - "3005:3005"
+    environment:
+      DATABASE_URL: postgresql://paycraft:paycraft_secure_2026@db:5432/paycraft_prod
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-paycraft-prod-secret-change-me}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://187.77.217.138:3005}
+      NODE_ENV: production
+    depends_on:
+      db:
+        condition: service_started
+
+volumes:
+  postgres_data:

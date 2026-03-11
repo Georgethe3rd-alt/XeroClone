@@ -11,10 +11,15 @@
  * Run: npx prisma db seed
  */
 
-import { PrismaClient } from "../app/generated/prisma";
+import "dotenv/config";
+import { Pool } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "../app/generated/prisma/client.ts";
 import bcrypt from "bcryptjs";
 
-const prisma = new PrismaClient();
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log("🌱 Seeding PayCraft demo data...");
@@ -92,15 +97,9 @@ async function main() {
       name: "Sunshine Bookkeeping Co.",
       abn: "51 824 753 556",
       address: "Level 3, 88 Walker Street, North Sydney NSW 2060",
-      city: "North Sydney",
-      state: "NSW",
-      postcode: "2060",
       country: "AU",
       timezone: "Australia/Sydney",
       currency: "AUD",
-      phone: "02 9876 5432",
-      website: "https://sunshineaccounting.com.au",
-      logoUrl: null,
     },
   });
 
@@ -109,15 +108,9 @@ async function main() {
       name: "TechVault Pty Ltd",
       abn: "78 123 456 789",
       address: "42 Market Street, Sydney NSW 2000",
-      city: "Sydney",
-      state: "NSW",
-      postcode: "2000",
       country: "AU",
       timezone: "Australia/Sydney",
       currency: "AUD",
-      phone: "02 9123 4567",
-      website: "https://techvault.com.au",
-      logoUrl: null,
     },
   });
 
@@ -126,15 +119,9 @@ async function main() {
       name: "FreshBrew Coffee Co.",
       abn: "33 987 654 321",
       address: "15 Bridge Road, Richmond VIC 3121",
-      city: "Richmond",
-      state: "VIC",
-      postcode: "3121",
       country: "AU",
       timezone: "Australia/Melbourne",
       currency: "AUD",
-      phone: "03 9876 1234",
-      website: "https://freshbrewcoffee.com.au",
-      logoUrl: null,
     },
   });
 
@@ -349,11 +336,7 @@ async function main() {
       lastName: "Thornton",
       email: "j.thornton@techvault.com.au",
       phone: "0412 345 678",
-      address: "15 Willowbrook Ave",
-      city: "Chatswood",
-      state: "NSW",
-      postcode: "2067",
-      country: "AU",
+      address: "15 Willowbrook Ave, Chatswood NSW 2067",
       dateOfBirth: new Date("1988-06-22"),
       startDate: new Date("2021-03-15"),
       employmentType: "FULL_TIME",
@@ -372,11 +355,7 @@ async function main() {
       lastName: "Kapoor",
       email: "p.kapoor@techvault.com.au",
       phone: "0421 987 654",
-      address: "42 Harbour Crescent",
-      city: "Pyrmont",
-      state: "NSW",
-      postcode: "2009",
-      country: "AU",
+      address: "42 Harbour Crescent, Pyrmont NSW 2009",
       dateOfBirth: new Date("1991-11-14"),
       startDate: new Date("2022-01-10"),
       employmentType: "FULL_TIME",
@@ -394,11 +373,7 @@ async function main() {
       lastName: "Chen",
       email: "m.chen@techvault.com.au",
       phone: "0435 222 111",
-      address: "8 Palm Street",
-      city: "Newtown",
-      state: "NSW",
-      postcode: "2042",
-      country: "AU",
+      address: "8 Palm Street, Newtown NSW 2042",
       dateOfBirth: new Date("1987-03-05"),
       startDate: new Date("2020-07-20"),
       employmentType: "FULL_TIME",
@@ -416,11 +391,7 @@ async function main() {
       lastName: "Andersen",
       email: "s.andersen@techvault.com.au",
       phone: "0411 333 444",
-      address: "21 Rose Bay Drive",
-      city: "Bondi",
-      state: "NSW",
-      postcode: "2026",
-      country: "AU",
+      address: "21 Rose Bay Drive, Bondi NSW 2026",
       dateOfBirth: new Date("1994-09-17"),
       startDate: new Date("2023-03-01"),
       employmentType: "FULL_TIME",
@@ -438,11 +409,7 @@ async function main() {
       lastName: "Nguyen",
       email: "t.nguyen@techvault.com.au",
       phone: "0455 777 888",
-      address: "33 Park Lane",
-      city: "Parramatta",
-      state: "NSW",
-      postcode: "2150",
-      country: "AU",
+      address: "33 Park Lane, Parramatta NSW 2150",
       dateOfBirth: new Date("1985-12-29"),
       startDate: new Date("2019-11-04"),
       employmentType: "FULL_TIME",
@@ -460,11 +427,7 @@ async function main() {
       lastName: "Okonkwo",
       email: "a.okonkwo@techvault.com.au",
       phone: "0478 999 000",
-      address: "57 Oxford Street",
-      city: "Surry Hills",
-      state: "NSW",
-      postcode: "2010",
-      country: "AU",
+      address: "57 Oxford Street, Surry Hills NSW 2010",
       dateOfBirth: new Date("1990-02-18"),
       startDate: new Date("2022-08-15"),
       employmentType: "FULL_TIME",
@@ -784,12 +747,18 @@ async function main() {
   ];
 
   for (const entry of timesheetEntries) {
+    const baseDate = new Date(entry.date);
+    const startHour = entry.regularHours > 0 ? 7 : 8;
+    const endHour = entry.regularHours > 0 ? (entry.overtimeHours > 0 ? 16 : 15) : 9;
+    const endMin = entry.regularHours > 0 ? (entry.overtimeHours > 0 ? 30 : 30) : 30;
+    const startTime = new Date(baseDate); startTime.setHours(startHour, 0, 0, 0);
+    const endTime = new Date(baseDate); endTime.setHours(endHour, endMin, 0, 0);
     await prisma.timesheetEntry.create({
       data: {
         timesheetId: ts1.id,
-        date: new Date(entry.date),
-        startTime: entry.regularHours > 0 ? "07:00" : "08:00",
-        endTime: entry.regularHours > 0 ? (entry.overtimeHours > 0 ? "16:30" : "15:30") : "09:30",
+        date: baseDate,
+        startTime,
+        endTime,
         regularHours: entry.regularHours,
         overtimeHours: entry.overtimeHours,
         breakMinutes: entry.regularHours > 0 ? 30 : 0,

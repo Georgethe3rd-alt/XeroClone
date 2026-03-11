@@ -9,5 +9,5 @@ services:
     environment:
       - PORT=80
       - ANTHROPIC_API_KEY=<ANTHROPIC_API_KEY>
-      - DASH_PASSWORD=Wayne2026#
+      - DASH_PASSWORD=<DASH_PASSWORD>
     restart: unless-stopped

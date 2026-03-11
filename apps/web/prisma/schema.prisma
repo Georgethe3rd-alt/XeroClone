@@ -1,0 +1,686 @@
+// PayCraft - Production-ready SMB Payroll SaaS
+// Prisma Schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum MembershipRole {
+  OWNER
+  PAYROLL_ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CASUAL
+  CONTRACTOR
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+  TERMINATED
+  ON_LEAVE
+}
+
+enum EmploymentPayType {
+  SALARY
+  HOURLY
+}
+
+enum PayFrequency {
+  WEEKLY
+  FORTNIGHTLY
+  MONTHLY
+}
+
+enum PayRunStatus {
+  DRAFT
+  PROCESSING
+  APPROVED
+  POSTED
+  CANCELLED
+}
+
+enum PayRunItemStatus {
+  INCLUDED
+  EXCLUDED
+  ERROR
+}
+
+enum LineItemType {
+  EARNING
+  DEDUCTION
+  EMPLOYER_CONTRIBUTION
+  REIMBURSEMENT
+}
+
+enum TimesheetStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum LeaveRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum LeaveTransactionType {
+  ACCRUAL
+  DEDUCTION
+  ADJUSTMENT
+  OPENING
+}
+
+enum PayItemType {
+  EARNING
+  DEDUCTION
+  EMPLOYER_CONTRIBUTION
+  REIMBURSEMENT
+}
+
+enum ResidencyStatus {
+  RESIDENT
+  NON_RESIDENT
+  WORKING_HOLIDAY
+}
+
+enum BankAllocationtype {
+  FIXED
+  PERCENTAGE
+}
+
+enum FilingType {
+  STP
+  BAS
+  PAYG_SUMMARY
+}
+
+enum FilingStatus {
+  PENDING
+  SUBMITTED
+  ACCEPTED
+  REJECTED
+}
+
+enum JournalExportStatus {
+  PENDING
+  EXPORTED
+}
+
+enum JournalExportFormat {
+  CSV
+  JSON
+}
+
+// ---------------------------------------------------------------------------
+// Auth.js (NextAuth v5) models
+// ---------------------------------------------------------------------------
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---------------------------------------------------------------------------
+// Core identity models
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  name          String?
+  password      String?
+  role          String    @default("user")
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  memberships   Membership[]
+  employees     Employee[]
+  auditEvents   AuditEvent[]
+  notifications Notification[]
+  documents     Document[]
+  payRunsCreated  PayRun[]  @relation("PayRunCreatedBy")
+  payRunsApproved PayRun[]  @relation("PayRunApprovedBy")
+  timesheetsApproved Timesheet[] @relation("TimesheetApprovedBy")
+  leaveRequestsApproved LeaveRequest[] @relation("LeaveRequestApprovedBy")
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  abn       String?
+  address   String?
+  logo      String?
+  timezone  String   @default("Australia/Sydney")
+  currency  String   @default("AUD")
+  country   String   @default("AU")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships       Membership[]
+  employees         Employee[]
+  paySchedules      PaySchedule[]
+  payRuns           PayRun[]
+  payItems          PayItem[]
+  leaveTypes        LeaveType[]
+  leaveRequests     LeaveRequest[]
+  leaveBalanceLedger LeaveBalanceLedger[]
+  timesheets        Timesheet[]
+  auditEvents       AuditEvent[]
+  notifications     Notification[]
+  documents         Document[]
+  filingSubmissions FilingSubmission[]
+  journalExports    JournalExport[]
+}
+
+model Membership {
+  id        String           @id @default(uuid())
+  orgId     String
+  userId    String
+  role      MembershipRole   @default(EMPLOYEE)
+  status    MembershipStatus @default(INVITED)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, userId])
+}
+
+// ---------------------------------------------------------------------------
+// Employee & Employment
+// ---------------------------------------------------------------------------
+
+model Employee {
+  id             String         @id @default(uuid())
+  orgId          String
+  userId         String?
+  employeeCode   String
+  firstName      String
+  lastName       String
+  email          String
+  phone          String?
+  address        String?
+  dateOfBirth    DateTime?
+  startDate      DateTime
+  endDate        DateTime?
+  employmentType EmploymentType @default(FULL_TIME)
+  status         EmployeeStatus @default(ACTIVE)
+  jobTitle       String?
+  department     String?
+  managerId      String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organization      Organization         @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user              User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  manager           Employee?            @relation("EmployeeManager", fields: [managerId], references: [id], onDelete: SetNull)
+  directReports     Employee[]           @relation("EmployeeManager")
+  employments       Employment[]
+  bankAccounts      BankAccount[]
+  taxProfile        TaxProfile?
+  payRunItems       PayRunItem[]
+  payslips          Payslip[]
+  timesheets        Timesheet[]
+  leaveRequests     LeaveRequest[]
+  leaveBalanceLedger LeaveBalanceLedger[]
+  documents         Document[]
+
+  @@unique([orgId, employeeCode])
+}
+
+model Employment {
+  id            String            @id @default(uuid())
+  employeeId    String
+  type          EmploymentPayType @default(SALARY)
+  annualSalary  Decimal?          @db.Decimal(12, 2)
+  hourlyRate    Decimal?          @db.Decimal(10, 4)
+  hoursPerWeek  Decimal           @db.Decimal(5, 2)
+  payScheduleId String
+  effectiveDate DateTime
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  employee    Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  paySchedule PaySchedule @relation(fields: [payScheduleId], references: [id])
+  payRunItems PayRunItem[]
+}
+
+model BankAccount {
+  id               String             @id @default(uuid())
+  employeeId       String
+  accountName      String
+  bsb              String
+  accountNumber    String
+  isPrimary        Boolean            @default(false)
+  allocationType   BankAllocationtype @default(PERCENTAGE)
+  allocationAmount Decimal            @db.Decimal(10, 4)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model TaxProfile {
+  id                 String          @id @default(uuid())
+  employeeId         String          @unique
+  tfn                String?
+  taxFreeThreshold   Boolean         @default(false)
+  helpDebt           Boolean         @default(false)
+  seniorOffset       Boolean         @default(false)
+  medicareExemption  Boolean         @default(false)
+  residencyStatus    ResidencyStatus @default(RESIDENT)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------------------
+// Pay Schedules & Pay Runs
+// ---------------------------------------------------------------------------
+
+model PaySchedule {
+  id           String       @id @default(uuid())
+  orgId        String
+  name         String
+  frequency    PayFrequency @default(FORTNIGHTLY)
+  dayOfWeek    Int?
+  dayOfMonth   Int?
+  firstPayDate DateTime
+  nextPayDate  DateTime
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  employments  Employment[]
+  payRuns      PayRun[]
+}
+
+model PayRun {
+  id            String       @id @default(uuid())
+  orgId         String
+  payScheduleId String
+  periodStart   DateTime
+  periodEnd     DateTime
+  payDate       DateTime
+  status        PayRunStatus @default(DRAFT)
+  totalGross    Decimal      @default(0) @db.Decimal(12, 2)
+  totalTax      Decimal      @default(0) @db.Decimal(12, 2)
+  totalNet      Decimal      @default(0) @db.Decimal(12, 2)
+  totalSuper    Decimal      @default(0) @db.Decimal(12, 2)
+  createdById   String
+  approvedById  String?
+  approvedAt    DateTime?
+  postedAt      DateTime?
+  lockedAt      DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  organization      Organization       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  paySchedule       PaySchedule        @relation(fields: [payScheduleId], references: [id])
+  createdBy         User               @relation("PayRunCreatedBy", fields: [createdById], references: [id])
+  approvedBy        User?              @relation("PayRunApprovedBy", fields: [approvedById], references: [id])
+  payRunItems       PayRunItem[]
+  payslips          Payslip[]
+  leaveBalanceLedger LeaveBalanceLedger[]
+  filingSubmissions FilingSubmission[]
+  journalExports    JournalExport[]
+}
+
+model PayRunItem {
+  id                 String           @id @default(uuid())
+  payRunId           String
+  employeeId         String
+  employmentId       String
+  grossEarnings      Decimal          @default(0) @db.Decimal(12, 2)
+  regularPay         Decimal          @default(0) @db.Decimal(12, 2)
+  overtimePay        Decimal          @default(0) @db.Decimal(12, 2)
+  allowances         Decimal          @default(0) @db.Decimal(12, 2)
+  bonuses            Decimal          @default(0) @db.Decimal(12, 2)
+  reimbursements     Decimal          @default(0) @db.Decimal(12, 2)
+  taxWithheld        Decimal          @default(0) @db.Decimal(12, 2)
+  superContribution  Decimal          @default(0) @db.Decimal(12, 2)
+  totalDeductions    Decimal          @default(0) @db.Decimal(12, 2)
+  netPay             Decimal          @default(0) @db.Decimal(12, 2)
+  ytdGross           Decimal          @default(0) @db.Decimal(12, 2)
+  ytdTax             Decimal          @default(0) @db.Decimal(12, 2)
+  ytdSuper           Decimal          @default(0) @db.Decimal(12, 2)
+  status             PayRunItemStatus @default(INCLUDED)
+  notes              String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  payRun       PayRun           @relation(fields: [payRunId], references: [id], onDelete: Cascade)
+  employee     Employee         @relation(fields: [employeeId], references: [id])
+  employment   Employment       @relation(fields: [employmentId], references: [id])
+  lineItems    PayRunLineItem[]
+  payslip      Payslip?
+}
+
+model PayRunLineItem {
+  id           String       @id @default(uuid())
+  payRunItemId String
+  payItemId    String?
+  type         LineItemType
+  description  String
+  quantity     Decimal      @db.Decimal(10, 4)
+  rate         Decimal      @db.Decimal(10, 4)
+  amount       Decimal      @db.Decimal(12, 2)
+  isTaxable    Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  payRunItem PayRunItem @relation(fields: [payRunItemId], references: [id], onDelete: Cascade)
+  payItem    PayItem?   @relation(fields: [payItemId], references: [id], onDelete: SetNull)
+}
+
+model Payslip {
+  id           String    @id @default(uuid())
+  payRunItemId String    @unique
+  employeeId   String
+  payRunId     String
+  generatedAt  DateTime  @default(now())
+  pdfUrl       String?
+  sentAt       DateTime?
+  viewedAt     DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  payRunItem PayRunItem @relation(fields: [payRunItemId], references: [id], onDelete: Cascade)
+  employee   Employee   @relation(fields: [employeeId], references: [id])
+  payRun     PayRun     @relation(fields: [payRunId], references: [id])
+}
+
+// ---------------------------------------------------------------------------
+// Timesheets
+// ---------------------------------------------------------------------------
+
+model Timesheet {
+  id                 String          @id @default(uuid())
+  orgId              String
+  employeeId         String
+  periodStart        DateTime
+  periodEnd          DateTime
+  status             TimesheetStatus @default(DRAFT)
+  submittedAt        DateTime?
+  approvedById       String?
+  approvedAt         DateTime?
+  rejectedReason     String?
+  totalHours         Decimal         @default(0) @db.Decimal(7, 2)
+  totalOvertimeHours Decimal         @default(0) @db.Decimal(7, 2)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  organization Organization      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  employee     Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  approvedBy   User?             @relation("TimesheetApprovedBy", fields: [approvedById], references: [id])
+  entries      TimesheetEntry[]
+}
+
+model TimesheetEntry {
+  id            String   @id @default(uuid())
+  timesheetId   String
+  date          DateTime @db.Date
+  startTime     DateTime?
+  endTime       DateTime?
+  regularHours  Decimal  @db.Decimal(5, 2)
+  overtimeHours Decimal  @default(0) @db.Decimal(5, 2)
+  breakMinutes  Int      @default(0)
+  notes         String?
+  payItemId     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  timesheet Timesheet @relation(fields: [timesheetId], references: [id], onDelete: Cascade)
+  payItem   PayItem?  @relation(fields: [payItemId], references: [id], onDelete: SetNull)
+}
+
+// ---------------------------------------------------------------------------
+// Leave
+// ---------------------------------------------------------------------------
+
+model LeaveType {
+  id                  String   @id @default(uuid())
+  orgId               String
+  name                String
+  code                String
+  isPaid              Boolean  @default(true)
+  accrualBased        Boolean  @default(true)
+  accrualRatePerYear  Decimal  @db.Decimal(7, 4)
+  maxBalance          Decimal? @db.Decimal(7, 2)
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  organization        Organization         @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  leaveRequests       LeaveRequest[]
+  leaveBalanceLedger  LeaveBalanceLedger[]
+
+  @@unique([orgId, code])
+}
+
+model LeaveRequest {
+  id             String             @id @default(uuid())
+  orgId          String
+  employeeId     String
+  leaveTypeId    String
+  startDate      DateTime
+  endDate        DateTime
+  totalDays      Decimal            @db.Decimal(7, 2)
+  totalHours     Decimal?           @db.Decimal(7, 2)
+  status         LeaveRequestStatus @default(PENDING)
+  reason         String?
+  approvedById   String?
+  approvedAt     DateTime?
+  rejectedReason String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  organization       Organization         @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  employee           Employee             @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType          LeaveType            @relation(fields: [leaveTypeId], references: [id])
+  approvedBy         User?                @relation("LeaveRequestApprovedBy", fields: [approvedById], references: [id])
+  leaveBalanceLedger LeaveBalanceLedger[]
+}
+
+model LeaveBalanceLedger {
+  id              String               @id @default(uuid())
+  orgId           String
+  employeeId      String
+  leaveTypeId     String
+  transactionDate DateTime
+  transactionType LeaveTransactionType
+  amount          Decimal              @db.Decimal(7, 4)
+  balance         Decimal              @db.Decimal(7, 4)
+  description     String?
+  payRunId        String?
+  leaveRequestId  String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  organization  Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  employee      Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType     LeaveType     @relation(fields: [leaveTypeId], references: [id])
+  payRun        PayRun?       @relation(fields: [payRunId], references: [id], onDelete: SetNull)
+  leaveRequest  LeaveRequest? @relation(fields: [leaveRequestId], references: [id], onDelete: SetNull)
+}
+
+// ---------------------------------------------------------------------------
+// Pay Items
+// ---------------------------------------------------------------------------
+
+model PayItem {
+  id                String      @id @default(uuid())
+  orgId             String
+  name              String
+  code              String
+  type              PayItemType
+  isSystemItem      Boolean     @default(false)
+  isTaxable         Boolean     @default(true)
+  superImpactable   Boolean     @default(false)
+  isActive          Boolean     @default(true)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  organization     Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  payRunLineItems  PayRunLineItem[]
+  timesheetEntries TimesheetEntry[]
+
+  @@unique([orgId, code])
+}
+
+// ---------------------------------------------------------------------------
+// Audit, Notifications, Documents
+// ---------------------------------------------------------------------------
+
+model AuditEvent {
+  id         String   @id @default(uuid())
+  orgId      String
+  userId     String
+  action     String
+  entityType String
+  entityId   String
+  oldValues  Json?
+  newValues  Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id])
+}
+
+model Notification {
+  id         String    @id @default(uuid())
+  orgId      String
+  userId     String
+  type       String
+  title      String
+  message    String
+  isRead     Boolean   @default(false)
+  readAt     DateTime?
+  entityType String?
+  entityId   String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Document {
+  id           String    @id @default(uuid())
+  orgId        String
+  employeeId   String?
+  name         String
+  type         String
+  fileUrl      String
+  fileSize     Int
+  mimeType     String
+  uploadedById String
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  employee     Employee?    @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  uploadedBy   User         @relation(fields: [uploadedById], references: [id])
+}
+
+// ---------------------------------------------------------------------------
+// Compliance & Integrations
+// ---------------------------------------------------------------------------
+
+model FilingSubmission {
+  id           String       @id @default(uuid())
+  orgId        String
+  payRunId     String?
+  type         FilingType
+  status       FilingStatus @default(PENDING)
+  submittedAt  DateTime?
+  reference    String?
+  responseData Json?
+  errorMessage String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  payRun       PayRun?      @relation(fields: [payRunId], references: [id], onDelete: SetNull)
+}
+
+model JournalExport {
+  id         String              @id @default(uuid())
+  orgId      String
+  payRunId   String
+  status     JournalExportStatus @default(PENDING)
+  exportedAt DateTime?
+  format     JournalExportFormat @default(CSV)
+  fileUrl    String?
+  mappings   Json?
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  payRun       PayRun       @relation(fields: [payRunId], references: [id], onDelete: Cascade)
+}

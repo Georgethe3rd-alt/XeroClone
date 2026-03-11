@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --ring: 221.2 83.2% 53.3%;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+
+  h1 { @apply text-2xl font-bold text-gray-900; }
+  h2 { @apply text-xl font-semibold text-gray-900; }
+  h3 { @apply text-base font-semibold text-gray-900; }
+}
+
+@layer utilities {
+  .page-header {
+    @apply flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4;
+  }
+  .page-content {
+    @apply px-6 py-6;
+  }
+}

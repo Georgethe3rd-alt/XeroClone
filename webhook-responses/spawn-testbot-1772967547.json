@@ -1,9 +1,0 @@
-{
-  "action": "spawn",
-  "agentId": "testbot",
-  "type": "persistent",
-  "model": "anthropic/claude-sonnet-4-5",
-  "workspace": "/data/.openclaw/workspace/agents/testbot",
-  "memory": "/data/.openclaw/workspace/agents/testbot/memory.md",
-  "callbackUrl": null
-}

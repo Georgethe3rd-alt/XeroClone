@@ -1,7 +1,0 @@
-{
-  "action": "message",
-  "agentId": "testbot",
-  "sessionKey": "agent:main:subagent:75902f89-ce78-4dba-a8d5-96a4d77f1bdb",
-  "message": "What is 2+2?",
-  "callbackUrl": "http://187.77.217.138:3003/webhook/agent-callback"
-}

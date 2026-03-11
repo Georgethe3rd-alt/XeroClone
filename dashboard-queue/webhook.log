@@ -1,8 +1,0 @@
-[Queue Webhook] Running on port 3006
-[Queue Webhook] Auto-processing enabled via openclaw agent CLI
-[Queue Webhook] Dirs: requests/ responses/ processing/
-[Process] scout: Quick health check - what services are running?...
-[Done] scout (5267ms): **Health Check Summary**
-
-Running services:
-- ✅ **openclaw-gateway** (PID 28) - 

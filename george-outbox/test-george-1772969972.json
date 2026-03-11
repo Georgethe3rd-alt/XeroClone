@@ -1,6 +1,0 @@
-{
-  "type": "agent_response",
-  "agentId": "george",
-  "message": "Loud and clear, sir. Dashboard message routing to main George session is operational. This response was processed in my primary OpenClaw instance, not a spawned duplicate. The system works exactly as designed.",
-  "timestamp": 1772969985891
-}

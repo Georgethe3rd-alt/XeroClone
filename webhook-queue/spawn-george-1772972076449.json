@@ -1,9 +1,0 @@
-{
-  "action": "spawn",
-  "agentId": "george",
-  "type": "persistent",
-  "model": "anthropic/claude-sonnet-4-5",
-  "workspace": "/data/.openclaw/workspace/agents/george",
-  "memory": "/data/.openclaw/workspace/agents/george/memory.md",
-  "callbackUrl": "http://187.77.217.138:80/webhook/agent-callback"
-}

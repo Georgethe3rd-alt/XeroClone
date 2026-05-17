@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>pymtz Admin</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --primary:#0F172A;
+  --primary-accent:#3B82F6;
+  --text:#0B1220;
+  --text-muted:#64748B;
+  --text-subtle:#94A3B8;
+  --bg:#F8FAFC;
+  --card:#FFFFFF;
+  --border:#E2E8F0;
+  --positive:#059669;
+  --negative:#DC2626;
+  --warning:#D97706;
+  --accent-gold:#B8860B;
+  --radius:12px;
+  --sidebar-bg:#0F172A;
+  --sidebar-text:#94A3B8;
+  --sidebar-hover:#1E293B;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+
+/* Premium Typography */
+h1,h2,h3,h4,h5,h6{font-weight:700;line-height:1.2;color:var(--text)}
+h1{font-size:2rem}h2{font-size:1.5rem}h3{font-size:1.25rem}h4{font-size:1.125rem}
+p{color:var(--text-muted)}
+
+/* Login Screen */
+.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,var(--primary) 0%,#1E293B 100%)}
+.login-box{background:var(--card);border-radius:16px;padding:3rem;width:28rem;max-width:90vw;text-align:center;border:1px solid var(--border);box-shadow:0 20px 40px rgba(0,0,0,0.1)}
+.login-box .logo{font-size:2.5rem;font-weight:900;color:var(--primary);margin-bottom:0.5rem;letter-spacing:-0.02em}
+.login-box p{color:var(--text-muted);margin-bottom:2rem;font-size:1rem}
+.login-box input{width:100%;padding:0.875rem 1rem;border:1px solid var(--border);border-radius:8px;font-size:1rem;outline:none;transition:all 0.2s;background:var(--bg)}
+.login-box input:focus{border-color:var(--primary-accent);box-shadow:0 0 0 3px rgba(59,130,246,0.1);background:var(--card)}
+.login-box button{width:100%;padding:0.875rem;background:var(--primary);color:white;border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
+.login-box button:hover{background:#1E293B;transform:translateY(-1px)}
+.login-box button:active{transform:translateY(0)}
+.login-error{color:var(--negative);font-size:0.875rem;margin-top:0.75rem;display:none}
+
+/* Sidebar */
+.app{display:none;min-height:100vh}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:280px;background:var(--sidebar-bg);overflow-y:auto;z-index:100;transition:transform 0.3s cubic-bezier(0.4,0,0.2,1)}
+.sidebar .brand{padding:2rem;font-size:1.75rem;font-weight:900;color:white;letter-spacing:-0.02em;border-bottom:1px solid rgba(255,255,255,0.1)}
+.sidebar .nav-section{padding:1.5rem 0}
+.sidebar a{display:flex;align-items:center;gap:0.75rem;padding:0.875rem 2rem;color:var(--sidebar-text);text-decoration:none;font-size:0.9375rem;font-weight:500;transition:all 0.15s;position:relative}
+.sidebar a:hover{color:white;background:var(--sidebar-hover)}
+.sidebar a.active{color:white;background:var(--sidebar-hover);border-left:3px solid var(--primary-accent);padding-left:calc(2rem - 3px)}
+.sidebar .logout{position:absolute;bottom:2rem;left:0;right:0;padding:0.875rem 2rem;color:var(--negative);opacity:0.8}
+.sidebar .logout:hover{opacity:1;background:rgba(220,38,38,0.1)}
+
+/* Main Content */
+.main{margin-left:280px;min-height:100vh;background:var(--bg)}
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:1.5rem 2rem;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:90}
+.topbar h1{font-size:1.5rem;font-weight:800;color:var(--text);letter-spacing:-0.02em}
+.topbar .actions{display:flex;gap:1rem;align-items:center}
+.content{padding:2rem}
+
+/* Panel */
+.panel{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;margin-bottom:2rem}
+.panel-header{padding:1.5rem 2rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.panel-header h2{font-size:1.125rem;font-weight:700;margin:0}
+
+/* Enhanced Cards with Borders */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.5rem;margin-bottom:2rem}
+.card{background:var(--card);border-radius:var(--radius);padding:1.75rem;border:1px solid var(--border);transition:all 0.2s;position:relative;overflow:hidden}
+.card:hover{transform:translateY(-2px);border-color:#CBD5E1}
+.card .label{font-size:0.8125rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem}
+.card .value{font-size:2.25rem;font-weight:800;margin:0.25rem 0;color:var(--text);letter-spacing:-0.02em;line-height:1}
+.card .sub{font-size:0.875rem;color:var(--text-subtle);margin-top:0.5rem}
+.card .trend{position:absolute;top:1.5rem;right:1.5rem;padding:0.375rem 0.75rem;border-radius:6px;font-size:0.8125rem;font-weight:600;display:flex;align-items:center;gap:0.25rem}
+.card .trend.up{background:rgba(5,150,105,0.1);color:var(--positive)}
+.card .trend.down{background:rgba(220,38,38,0.1);color:var(--negative)}
+.card .trend svg{width:12px;height:12px}
+
+/* Premium Skeleton Loader */
+.skeleton-container{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.5rem;margin-bottom:2rem}
+.skeleton-card{background:var(--card);border-radius:var(--radius);padding:1.75rem;border:1px solid var(--border)}
+.skeleton-line{height:1em;border-radius:4px;background:linear-gradient(90deg,#f0f0f0 0%,#e8e8e8 40%,#fafafa 50%,#e8e8e8 60%,#f0f0f0 100%);background-size:200% 100%;background-position:100% 0;animation:skeleton-shimmer 1.4s linear infinite;will-change:background-position}
+.skeleton-title{height:0.8125rem;width:60%;margin-bottom:0.75rem}
+.skeleton-value{height:2.25rem;width:40%}
+@keyframes skeleton-shimmer{to{background-position:-100% 0}}
+@media(prefers-reduced-motion:reduce){.skeleton-line{animation:none;background:#ececec}}
+
+/* Data Visualization Container */
+.chart-container{background:var(--card);border-radius:var(--radius);padding:1.5rem;margin-bottom:2rem;border:1px solid var(--border)}
+.chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
+.chart-header h3{font-size:1.125rem;font-weight:700;color:var(--text);margin:0}
+.time-selector{display:flex;gap:0.5rem}
+.time-btn{padding:0.5rem 1rem;border:1px solid var(--border);background:transparent;color:var(--text-muted);font-size:0.875rem;font-weight:500;border-radius:6px;cursor:pointer;transition:all 0.15s}
+.time-btn:hover{border-color:var(--primary-accent);color:var(--primary-accent);background:rgba(59,130,246,0.05)}
+.time-btn.active{background:var(--primary-accent);color:white;border-color:var(--primary-accent)}
+
+/* Premium Table Design */
+.table-container{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;margin-bottom:2rem}
+.table-header{padding:1.5rem 2rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.table-header h2{font-size:1.125rem;font-weight:700;margin:0}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:separate;border-spacing:0}
+thead{background:var(--bg)}
+th{padding:0.875rem 1.5rem;font-weight:600;font-size:0.8125rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:1.125rem 1.5rem;border-bottom:1px solid var(--border);font-size:0.9375rem;color:var(--text)}
+tbody tr{transition:background-color 0.15s}
+tbody tr:hover{background:var(--bg)}
+tbody tr:last-child td{border-bottom:none}
+
+/* Status Badges */
+.badge{display:inline-flex;align-items:center;padding:0.375rem 0.75rem;border-radius:6px;font-size:0.8125rem;font-weight:600;letter-spacing:0.025em}
+.badge-success{background:rgba(5,150,105,0.1);color:var(--positive)}
+.badge-warning{background:rgba(217,119,6,0.1);color:var(--warning)}
+.badge-danger{background:rgba(220,38,38,0.1);color:var(--negative)}
+.badge-info{background:rgba(59,130,246,0.1);color:var(--primary-accent)}
+.badge-neutral{background:var(--bg);color:var(--text-muted);border:1px solid var(--border)}
+
+/* Premium Buttons */
+.btn{padding:0.75rem 1.5rem;border-radius:8px;font-size:0.9375rem;font-weight:600;cursor:pointer;transition:all 0.15s;border:none;display:inline-flex;align-items:center;gap:0.5rem;text-decoration:none}
+.btn:focus-visible{outline:2px solid var(--primary-accent);outline-offset:2px}
+.btn-primary{background:var(--primary);color:white}
+.btn-primary:hover{background:#1E293B}
+.btn-secondary{background:transparent;color:var(--primary);border:1px solid var(--border)}
+.btn-secondary:hover{border-color:var(--primary);background:var(--bg)}
+.btn-sm{padding:0.5rem 1rem;font-size:0.875rem}
+.btn-danger{background:var(--negative);color:white}
+.btn-danger:hover{background:#B91C1C}
+.btn-success{background:var(--positive);color:white}
+.btn-success:hover{background:#047857}
+.btn-warning{background:var(--warning);color:white}
+.btn-warning:hover{background:#B45309}
+.btn-outline{background:transparent;color:var(--primary);border:1px solid var(--border)}
+.btn-outline:hover{border-color:var(--primary);background:var(--bg)}
+.btn-outline-danger{background:transparent;color:var(--negative);border:1px solid var(--negative)}
+.btn-outline-danger:hover{background:var(--negative);color:white}
+
+/* Header Button */
+.header-actions{display:flex;gap:1rem;align-items:center}
+.new-payment-btn{background:var(--primary-accent);color:white;padding:0.75rem 1.5rem;border-radius:8px;font-size:0.9375rem;font-weight:600;border:none;cursor:pointer;display:flex;align-items:center;gap:0.5rem;transition:all 0.15s}
+.new-payment-btn:hover{background:#2563EB;transform:translateY(-1px)}
+.new-payment-btn svg{width:16px;height:16px}
+
+/* Search Input */
+.search-input{padding:0.5rem 1rem;border:1px solid var(--border);border-radius:8px;font-size:0.875rem;background:var(--bg);color:var(--text);outline:none;transition:border-color 0.15s}
+.search-input:focus{border-color:var(--primary-accent)}
+
+/* Detail Views */
+.detail-panel{background:var(--card);border-radius:var(--radius);padding:2rem;border:1px solid var(--border);margin-bottom:1.5rem}
+.detail-panel h3{font-size:1.25rem;font-weight:700;margin-bottom:1.5rem;color:var(--text)}
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
+.detail-grid .item{background:var(--bg);border-radius:8px;padding:1rem;border:1px solid var(--border)}
+.detail-grid .lbl{font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:0.25rem}
+.detail-grid .val{font-size:0.9375rem;color:var(--text);font-weight:500}
+
+/* Tab visibility */
+.tab{display:none;padding:2rem}
+.tab.active{display:block}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--card);border-radius:var(--radius);padding:2rem;width:480px;max-width:90vw;border:1px solid var(--border);box-shadow:var(--shadow-lg)}
+.modal h3{font-size:1.25rem;font-weight:700;margin-bottom:1rem;color:var(--text)}
+.modal label{display:block;font-size:0.875rem;font-weight:600;color:var(--text-muted);margin-bottom:0.375rem;margin-top:1rem}
+.modal input{width:100%;padding:0.75rem 1rem;border:1px solid var(--border);border-radius:8px;font-size:0.9375rem;background:var(--bg);color:var(--text);outline:none}
+.modal input:focus{border-color:var(--primary-accent)}
+.modal-actions{display:flex;gap:0.75rem;justify-content:flex-end;margin-top:1.5rem}
+.modal-content{background:var(--card);border-radius:var(--radius);padding:2rem;width:480px;max-width:90vw;border:1px solid var(--border)}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
+.modal-header h3{margin:0}
+.modal-header .close{background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text-muted);line-height:1}
+.modal-body .form-group{margin-bottom:1rem}
+.modal-body .form-group label{display:block;font-size:0.875rem;font-weight:600;color:var(--text-muted);margin-bottom:0.375rem}
+.modal-body .form-control{width:100%;padding:0.75rem 1rem;border:1px solid var(--border);border-radius:8px;font-size:0.9375rem;background:var(--bg);color:var(--text);outline:none}
+.modal-body .form-control:focus{border-color:var(--primary-accent)}
+.modal-footer{display:flex;gap:0.75rem;justify-content:flex-end;margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border)}
+
+/* Toast */
+.toast{position:fixed;bottom:2rem;right:2rem;background:var(--dark);color:white;padding:1rem 1.5rem;border-radius:10px;font-size:0.9375rem;font-weight:500;z-index:300;opacity:0;transform:translateY(8px);transition:all 0.25s;pointer-events:none;background:#1E293B}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.toast-success{background:#065F46;border-left:3px solid var(--positive)}
+.toast.toast-error{background:#7F1D1D;border-left:3px solid var(--negative)}
+
+/* Audit Log */
+.audit-item{display:flex;gap:1rem;padding:1rem 1.5rem;border-bottom:1px solid var(--border)}
+.audit-item:last-child{border-bottom:none}
+.audit-dot{width:8px;height:8px;border-radius:50%;background:var(--primary-accent);margin-top:6px;flex-shrink:0}
+.audit-item .action{font-weight:600;font-size:0.9375rem;color:var(--text);margin-bottom:2px}
+.audit-item .meta{font-size:0.8125rem;color:var(--text-muted)}
+
+/* Mobile Card Pattern for Transactions */
+@media(max-width:640px){
+  .mobile-cards{display:block}
+  .desktop-table{display:none}
+  .transaction-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:0.75rem;cursor:pointer;transition:all 0.15s}
+  .transaction-card:hover{border-color:#CBD5E1}
+  .transaction-card:active{background:var(--bg)}
+  .transaction-primary{display:flex;justify-content:space-between;align-items:start;margin-bottom:0.5rem}
+  .transaction-amount{font-size:1.25rem;font-weight:700;color:var(--text)}
+  .transaction-merchant{font-weight:600;color:var(--text);margin-bottom:0.25rem}
+  .transaction-date{font-size:0.875rem;color:var(--text-subtle)}
+  .transaction-secondary{display:flex;justify-content:space-between;align-items:center;margin-top:0.75rem}
+  .transaction-customer{font-size:0.875rem;color:var(--text-muted)}
+  .transaction-expanded{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);display:none}
+  .transaction-card.expanded .transaction-expanded{display:block}
+}
+
+/* Desktop Responsive */
+@media(min-width:641px){
+  .mobile-cards{display:none}
+  .desktop-table{display:block}
+}
+
+/* General Mobile Adjustments */
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%);width:280px}
+  .sidebar.open{transform:translateX(0);box-shadow:0 0 20px rgba(0,0,0,0.1)}
+  .main{margin-left:0}
+  .topbar{padding:1rem}
+  .tab{padding:1rem}
+  .cards{grid-template-columns:1fr;gap:1rem}
+  .hamburger{display:block;background:none;border:none;font-size:1.5rem;cursor:pointer;padding:0.5rem}
+  .time-selector{display:none}
+  .header-actions{position:fixed;bottom:1rem;right:1rem;z-index:100}
+  .new-payment-btn{border-radius:50%;width:56px;height:56px;padding:0;justify-content:center;box-shadow:0 4px 12px rgba(59,130,246,0.3)}
+  .new-payment-btn span{display:none}
+}
+
+/* Loading States */
+.loading-state{display:flex;align-items:center;justify-content:center;padding:3rem;color:var(--text-muted)}
+.spinner{width:2rem;height:2rem;border:2px solid var(--border);border-top-color:var(--primary-accent);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Premium Focus States */
+*:focus-visible{outline:2px solid var(--primary-accent);outline-offset:2px}
+button:focus-visible{outline-offset:4px}
+
+body,html{overflow-x:hidden;max-width:100vw}
+</style>
+<!-- FIX: single Chart.js CDN load (removed duplicate broken inline script blocks) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" integrity="sha384-7sfl9OMSlhPvRVGXr8b3teVuZzFXQXmQiAXlmWMmBmQVptSX3ND9Y1LhN/hp8zSq" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="logo">py<span>mtz</span></div>
+    <p>Admin Dashboard</p>
+    <input type="text" id="usernameInput" placeholder="Username" autocomplete="off" style="margin-bottom:12px;">
+    <input type="password" id="passwordInput" placeholder="Password" autocomplete="off">
+    <button onclick="doLogin()">Sign In</button>
+    <div class="login-error" id="loginError">Invalid credentials</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <nav class="sidebar" id="sidebar">
+    <div class="brand">py<span>mtz</span></div><div style="padding:0 24px 12px;font-size:0.75rem;color:#9B9BC0;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Admin Panel</div>
+
+    <a data-tab="dashboard" class="active" onclick="switchTab('dashboard')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1"/>
+        <rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/>
+        <rect x="14" y="14" width="7" height="7" rx="1"/>
+      </svg>
+      Dashboard
+    </a>
+    <a data-tab="customers" onclick="switchTab('customers')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      Merchants
+    </a>
+    <a data-tab="resellers" onclick="switchTab('resellers')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="7" width="20" height="14" rx="2"/>
+        <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+      </svg>
+      Resellers
+    </a>
+    <a data-tab="transactions" onclick="switchTab('transactions')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="22 8 22 2 2 2 2 8"/>
+        <rect x="2" y="8" width="20" height="12" rx="2"/>
+        <path d="M6 12h4m4 0h4"/>
+      </svg>
+      Transactions
+    </a>
+    <a class="logout" onclick="doLogout()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Logout</a>
+  </nav>
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="hamburger" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+        <div><div style="font-size:0.7rem;color:#9B9BC0;text-transform:uppercase;letter-spacing:0.5px;">pymtz Administration</div><h1 id="pageTitle" style="margin:0;">Dashboard</h1></div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD TAB -->
+    <div class="tab active" id="tab-dashboard">
+      <div class="cards" id="dashCards">
+        <div class="skeleton-container">
+          <div class="skeleton-card">
+            <div class="skeleton-line skeleton-title"></div>
+            <div class="skeleton-line skeleton-value"></div>
+          </div>
+          <div class="skeleton-card">
+            <div class="skeleton-line skeleton-title"></div>
+            <div class="skeleton-line skeleton-value"></div>
+          </div>
+          <div class="skeleton-card">
+            <div class="skeleton-line skeleton-title"></div>
+            <div class="skeleton-line skeleton-value"></div>
+          </div>
+          <div class="skeleton-card">
+            <div class="skeleton-line skeleton-title"></div>
+            <div class="skeleton-line skeleton-value"></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><h2>Recent Transactions</h2></div>
+        <div class="table-wrap" id="recentTxWrap"><div class="loading-state"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+    <!-- CUSTOMERS TAB -->
+    <div class="tab" id="tab-customers">
+      <div id="customerList">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>All Merchants</h2>
+            <input class="search-input" placeholder="Search merchants..." oninput="filterCustomers(this.value)">
+          </div>
+          <div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Company</th><th>KYC</th><th>Created</th><th></th></tr></thead><tbody id="customersTbody"></tbody></table></div>
+        </div>
+      </div>
+      <div id="customerDetail" style="display:none"></div>
+    </div>
+
+    <!-- RESELLERS TAB -->
+    <div class="tab" id="tab-resellers">
+      <div id="resellerList">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>All Resellers</h2>
+            <button class="btn btn-primary" onclick="showCreateReseller()">+ New Reseller</button>
+          </div>
+          <div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Status</th><th>Merchants</th><th></th></tr></thead><tbody id="resellersTbody"></tbody></table></div>
+        </div>
+      </div>
+      <div id="resellerDetail" style="display:none"></div>
+    </div>
+
+    <!-- TRANSACTIONS TAB -->
+    <div class="tab" id="tab-transactions">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Transactions</h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <select class="search-input" id="txStatusFilter" onchange="filterTransactions()"><option value="">All Statuses</option><option>completed</option><option>pending</option><option>failed</option><option>refunded</option></select>
+            <input class="search-input" type="text" placeholder="Search..." id="txSearch" oninput="filterTransactions()">
+          </div>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Date</th><th>Amount</th><th>Status</th><th>Customer</th><th>Merchant</th><th>Reseller</th><th>Reference</th><th></th></tr></thead><tbody id="txTbody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- WITHDRAWALS TAB -->
+    <div class="tab" id="tab-withdrawals">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Withdrawal Requests</h2>
+          <select class="search-input" id="wdFilter" onchange="filterWithdrawals()"><option value="">All</option><option>pending</option><option>approved</option><option>rejected</option></select>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Date</th><th>Customer</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead><tbody id="wdTbody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- AUDIT TAB -->
+    <div class="tab" id="tab-audit">
+      <div class="panel">
+        <div class="panel-header"><h2>Audit Log</h2></div>
+        <div id="auditList"><div class="loading-state"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const API='/api/admin';
+let apiKey='';
+let allCustomers=[],allTransactions=[],allWithdrawals=[],allResellers=[];
+let _pendingAction=null,_merchantView=null,_wdMap={};
+
+// Auth
+function getKey(){return localStorage.getItem('pymtz_admin_key')||''}
+async function doLogin(){
+  const u=document.getElementById('usernameInput').value.trim();
+  const p=document.getElementById('passwordInput').value.trim();
+  if(!u||!p){toast('Enter username and password','error');return}
+  try{
+    const lr=await fetch(API+'/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+    const ld=await lr.json();
+    if(!lr.ok||!ld.ok){toast(ld.error||'Invalid credentials','error');return}
+    apiKey=ld.apiKey;
+    localStorage.setItem('pymtz_admin_key',apiKey);
+    localStorage.setItem('pymtz_admin_user',JSON.stringify(ld.user));
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('app').style.display='block';
+    loadDashboard();
+  }catch(e){toast('Login failed','error')}
+}
+function doLogout(){localStorage.removeItem('pymtz_admin_key');localStorage.removeItem('pymtz_admin_user');location.reload()}
+function init(){
+  apiKey=getKey();
+  if(apiKey){
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('app').style.display='block';
+    loadDashboard();
+  }
+}
+
+// API
+async function apiFetch(path,opts={}){
+  const r=await fetch(API+path,{...opts,headers:{'X-Admin-Key':apiKey,'Content-Type':'application/json',...(opts.headers||{})}});
+  if(!r.ok)throw new Error(r.status);
+  return r.json();
+}
+async function apiPost(path,body){return apiFetch(path,{method:'POST',body:JSON.stringify(body)})}
+async function apiDelete(path){return apiFetch(path,{method:'DELETE'})}
+
+// Toast
+function toast(msg,type='success'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast toast-'+type+' show';
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// Tabs
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.sidebar a[data-tab]').forEach(a=>a.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.querySelector(`[data-tab="${name}"]`).classList.add('active');
+  const titles={dashboard:'Dashboard',customers:'Merchants',resellers:'Resellers',transactions:'Transactions',withdrawals:'Withdrawals',audit:'Audit Log'};
+  document.getElementById('pageTitle').textContent=titles[name]||name;
+  document.getElementById('sidebar').classList.remove('open');
+  if(name==='customers')loadCustomers();
+  if(name==='resellers')loadResellers();
+  if(name==='transactions')loadTransactions();
+  if(name==='withdrawals')loadWithdrawals();
+  if(name==='audit')loadAudit();
+  if(name==='customers'){document.getElementById('customerDetail').style.display='none';document.getElementById('customerList').style.display='block'}
+  if(name==='resellers'){document.getElementById('resellerDetail').style.display='none';document.getElementById('resellerList').style.display='block'}
+}
+
+// Format helpers
+const fmt=v=>{const n=parseFloat(v)||0;return'$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})};
+const fmtDate=d=>d?new Date(d).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}):'—';
+const fmtDateTime=d=>d?new Date(d).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
+function badge(status){
+  const s=(status||'').toLowerCase();
+  const map={completed:'success',approved:'success',active:'success',verified:'success',pending:'warning',failed:'danger',rejected:'danger',refunded:'info',inactive:'neutral',unverified:'warning'};
+  return `<span class="badge badge-${map[s]||'neutral'}">${status||'N/A'}</span>`;
+}
+
+// DASHBOARD
+async function loadDashboard(){
+  try{
+    const d=await apiFetch('/dashboard');
+    const s=d.data||d;
+    document.getElementById('dashCards').innerHTML=`
+      <div class="card"><div class="label">Total Customers</div><div class="value">${s.totalCustomers??s.totalMerchants??s.merchants??'—'}</div></div>
+      <div class="card"><div class="label">Transaction Volume</div><div class="value">${fmt(s.transactionVolume??s.volume??0)}</div></div>
+      <div class="card"><div class="label">Revenue</div><div class="value">${fmt(s.revenue??0)}</div></div>
+      <div class="card"><div class="label">Active Resellers</div><div class="value">${s.activeResellers??s.resellers??'—'}</div></div>
+    `;
+    const txData=s.recentTransactions||[];
+    if(txData.length){
+      let rows=txData.slice(0,10).map(t=>`<tr><td>${fmtDateTime(t.createdAt||t.date)}</td><td>${fmt(t.amount)}</td><td>${badge(t.status)}</td><td>${t.customerName||t.customer||'—'}</td><td>${t.merchantName||t.merchant||'—'}</td><td>${t.resellerName||t.reseller||'—'}</td></tr>`).join('');
+      document.getElementById('recentTxWrap').innerHTML=`<table><thead><tr><th>Date</th><th>Amount</th><th>Status</th><th>Customer</th><th>Merchant</th><th>Reseller</th></tr></thead><tbody>${rows}</tbody></table>`;
+    } else {
+      document.getElementById('recentTxWrap').innerHTML='<div class="loading-state">No recent transactions</div>';
+    }
+  }catch(e){document.getElementById('dashCards').innerHTML='<div class="loading-state">Failed to load dashboard</div>'}
+}
+
+// CUSTOMERS
+async function loadCustomers(){
+  try{
+    const d=await apiFetch('/customers');
+    allCustomers=(d.data||d.customers||d)||[];
+    renderCustomers(allCustomers);
+  }catch(e){document.getElementById('customersTbody').innerHTML='<tr><td colspan="8">Failed to load</td></tr>'}
+}
+function renderCustomers(list){
+  document.getElementById('customersTbody').innerHTML=list.map(c=>`<tr>
+    <td>${c.name||c.fullName||'—'}</td><td>${c.email||'—'}</td><td>${c.company||c.companyName||'—'}</td>
+    <td>${badge(c.kycStatus||c.kyc||'unverified')}</td><td>${fmtDate(c.createdAt)}</td>
+    <td>
+      <button class="btn btn-sm btn-outline" onclick="viewCustomer('${c.id||c._id}')">View</button>
+      <button class="btn btn-sm btn-primary" onclick="editMerchant('${c.id||c._id}')">Edit</button>
+      <button class="btn btn-sm btn-danger" onclick="removeMerchant('${c.id||c._id}','${c.name||c.fullName||""}')">Remove</button>
+    </td>
+  </tr>`).join('')||'<tr><td colspan="8" style="text-align:center;padding:32px">No customers found</td></tr>';
+}
+function filterCustomers(q){
+  const f=q.toLowerCase();
+  renderCustomers(allCustomers.filter(c=>(c.name||c.fullName||'').toLowerCase().includes(f)||(c.email||'').toLowerCase().includes(f)||(c.company||c.companyName||'').toLowerCase().includes(f)));
+}
+async function viewCustomer(id){
+  try{
+    const d=await apiFetch('/customers/'+id);
+    const c=d.customer||d.data||d;
+    _merchantView=c;
+    document.getElementById('customerList').style.display='none';
+    document.getElementById('customerDetail').style.display='block';
+    document.getElementById('customerDetail').innerHTML=`
+      <button class="btn btn-outline" onclick="switchTab('customers')" style="margin-bottom:16px">← Back</button>
+      <div class="detail-panel">
+        <h3>${c.name||c.fullName||'Customer'}</h3>
+        <div class="detail-grid">
+          <div class="item"><div class="lbl">Email</div><div class="val">${c.email||'—'}</div></div>
+          <div class="item"><div class="lbl">Company</div><div class="val">${c.company||c.companyName||'—'}</div></div>
+          <div class="item"><div class="lbl">KYC Status</div><div class="val">${badge(c.kycStatus||c.kyc||'unverified')}</div></div>
+          <div class="item"><div class="lbl">Created</div><div class="val">${fmtDate(c.createdAt)}</div></div>
+          <div class="item"><div class="lbl">Balance</div><div class="val">${fmt(c.balance||0)}</div></div>
+          <div class="item"><div class="lbl">ID</div><div class="val" style="font-size:12px;word-break:break-all">${c.id||c._id||'—'}</div></div>
+        </div>
+        <div style="margin-top:20px">
+          <button class="btn btn-success" onclick="confirmKyc('${c.id||c._id}','verified')">✓ Verify KYC</button>
+          <button class="btn btn-outline-danger" onclick="confirmKyc('${c.id||c._id}','rejected')" style="margin-left:8px">✗ Reject KYC</button>
+          <button class="btn btn-secondary" onclick="resetMerchantPw('${c.id||c._id}','${c.email}')" style="margin-left:8px">🔐 Reset Password</button>
+        </div>
+      </div>`;
+  }catch(e){toast('Failed to load customer','error')}
+}
+
+async function editMerchant(merchantId){
+  const merchant=allCustomers.find(c=>(c.id||c._id)===merchantId);
+  if(!merchant)return;
+  const modal=document.createElement('div');
+  modal.className='modal-overlay show';
+  modal.innerHTML=`
+    <div class="modal-content" style="max-width:600px">
+      <div class="modal-header">
+        <h3>Edit Merchant</h3>
+        <button class="close" onclick="this.closest('.modal-overlay').remove()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" class="form-control" id="edit-name" value="${merchant.name||merchant.fullName||''}">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" class="form-control" id="edit-email" value="${merchant.email||''}">
+        </div>
+        <div class="form-group">
+          <label>Company</label>
+          <input type="text" class="form-control" id="edit-company" value="${merchant.company||merchant.companyName||''}">
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="text" class="form-control" id="edit-phone" value="${merchant.phoneNumber||''}">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveEditMerchant('${merchantId}')">Save Changes</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+async function saveEditMerchant(merchantId){
+  const name=document.getElementById('edit-name').value;
+  const email=document.getElementById('edit-email').value;
+  const company=document.getElementById('edit-company').value;
+  const phoneNumber=document.getElementById('edit-phone').value;
+  try{
+    const res=await apiFetch(`/customers/${merchantId}`,{method:'PUT',body:JSON.stringify({name,email,company,phoneNumber})});
+    if(res.message||res.ok){
+      toast('Merchant updated successfully','success');   // FIX: was showToast()
+      document.querySelector('.modal-overlay:not(#modal)').remove();
+      loadCustomers();
+    }else{
+      toast(res.error||'Update failed','error');          // FIX: was showToast()
+    }
+  }catch(err){
+    toast('Update failed: '+err.message,'error');         // FIX: was showToast()
+  }
+}
+
+async function removeMerchant(merchantId,merchantName){
+  if(!confirm(`Are you sure you want to remove ${merchantName}?\n\nThis will mark them as inactive and they won't be able to process payments.`))return;
+  try{
+    const res=await apiFetch(`/customers/${merchantId}`,{method:'DELETE'});
+    if(res.message||res.ok){
+      toast('Merchant removed successfully','success');   // FIX: was showToast()
+      loadCustomers();
+    }else{
+      toast(res.error||'Remove failed','error');          // FIX: was showToast()
+    }
+  }catch(err){
+    toast('Remove failed: '+err.message,'error');         // FIX: was showToast()
+  }
+}
+async function resetMerchantPw(id,email){
+  const newPw=prompt('Enter new password for '+email+' (min 8 chars):');
+  if(!newPw||newPw.length<8){if(newPw)alert('Password must be at least 8 characters');return;}
+  try{const r=await fetch(API+'/customers/'+id+'/reset-password',{method:'POST',headers:{'X-Admin-Key':apiKey,'Content-Type':'application/json'},body:JSON.stringify({password:newPw})});const d=await r.json();if(!r.ok)throw new Error(d.error);toast('Password reset for '+email)}catch(e){toast('Failed: '+e.message,'error')}
+}
+async function updateDepositTier(id,tier){
+  try{await fetch(API+'/resellers/'+id+'/deposit',{method:'PUT',headers:{'X-Admin-Key':apiKey,'Content-Type':'application/json'},body:JSON.stringify({tier})}).then(r=>{if(!r.ok)throw new Error();return r.json()});toast('Deposit tier updated');viewReseller(id)}catch(e){toast('Failed to update deposit','error')}
+}
+async function updateDeposit(id,amount){
+  try{await fetch(API+'/resellers/'+id+'/deposit',{method:'PUT',headers:{'X-Admin-Key':apiKey,'Content-Type':'application/json'},body:JSON.stringify({amount:parseFloat(amount)})}).then(r=>{if(!r.ok)throw new Error();return r.json()});toast('Security deposit updated');viewReseller(id)}catch(e){toast('Failed to update deposit','error')}
+}
+async function toggleDepositPaid(id,paid){
+  try{await fetch(API+'/resellers/'+id+'/deposit',{method:'PUT',headers:{'X-Admin-Key':apiKey,'Content-Type':'application/json'},body:JSON.stringify({paid})}).then(r=>{if(!r.ok)throw new Error();return r.json()});toast('Deposit status updated');viewReseller(id)}catch(e){toast('Failed to update deposit','error')}
+}
+async function updateCommission(id,rate){
+  try{await fetch(API+'/resellers/'+id+'/commission',{method:'PUT',headers:{'X-Admin-Key':apiKey,'Content-Type':'application/json'},body:JSON.stringify({commissionRate:parseFloat(rate)})}).then(r=>{if(!r.ok)throw new Error();return r.json()});toast('Commission rate updated to '+rate+'%')}catch(e){toast('Failed to update commission','error')}
+}
+async function kycOverride(id,status){
+  try{await apiPost('/customers/'+id+'/kyc-override',{status});toast('KYC status updated');viewCustomer(id)}catch(e){toast('Failed to update KYC','error')}
+}
+
+// RESELLERS
+async function loadResellers(){
+  try{
+    const d=await apiFetch('/resellers');
+    allResellers=(d.data||d.resellers||d)||[];
+    renderResellers(allResellers);
+  }catch(e){document.getElementById('resellersTbody').innerHTML='<tr><td colspan="8">Failed to load</td></tr>'}
+}
+function renderResellers(list){
+  document.getElementById('resellersTbody').innerHTML=list.map(r=>`<tr>
+    <td>${r.name||r.fullName||'—'}</td><td>${r.email||'—'}</td><td>${r.company||r.companyName||'—'}</td>
+    <td>${badge(r.active!==false?'active':'inactive')}</td><td>${r.customerCount??r.customers?.length??'—'}</td>
+    <td><button class="btn btn-sm btn-outline" onclick="viewReseller('${r.id||r._id}')">View</button>
+    ${r.active!==false?`<button class="btn btn-sm btn-danger" onclick="deactivateReseller('${r.id||r._id}')" style="margin-left:4px">Deactivate</button>`:''}</td>
+  </tr>`).join('')||'<tr><td colspan="8" style="text-align:center;padding:32px">No resellers</td></tr>';
+}
+async function viewReseller(id){
+  try{
+    const d=await apiFetch('/resellers/'+id);
+    const r=d.reseller||d.data||d;
+    const custs=d.customers||r.customers||[];
+    document.getElementById('resellerList').style.display='none';
+    document.getElementById('resellerDetail').style.display='block';
+    let custRows=custs.map(c=>`<tr><td>${c.name||c.fullName||'—'}</td><td>${c.email||'—'}</td><td>${badge(c.kycStatus||'unverified')}</td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center;padding:20px">No customers</td></tr>';
+    document.getElementById('resellerDetail').innerHTML=`
+      <button class="btn btn-outline" onclick="switchTab('resellers')" style="margin-bottom:16px">← Back</button>
+      <div class="detail-panel">
+        <h3>${r.name||r.fullName||'Reseller'}</h3>
+        <div class="detail-grid">
+          <div class="item"><div class="lbl">Email</div><div class="val">${r.email||'—'}</div></div>
+          <div class="item"><div class="lbl">Company</div><div class="val">${r.company||r.companyName||'—'}</div></div>
+          <div class="item"><div class="lbl">Commission Rate</div><div class="val"><select id="commRate" onchange="updateCommission('${r.id||r._id}',this.value)" style="background:#1a1a2e;color:#eaeaff;border:1px solid #333;border-radius:8px;padding:4px 8px;font-size:0.9rem;">${[0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5,7.0,7.5,8.0].map(v=>'<option value="'+v+'"'+(v===(r.commissionRate||0.5)?' selected':'')+'>'+v.toFixed(1)+'%</option>').join('')}</select></div></div>
+          <div class="item"><div class="lbl">Status</div><div class="val">${badge(r.active!==false?'active':'inactive')}</div></div>
+          <div class="item"><div class="lbl">Security Deposit</div><div class="val"><select id="depositTier" onchange="updateDepositTier('${r.id||r._id}',this.value)" style="background:#1a1a2e;color:#eaeaff;border:1px solid #333;border-radius:8px;padding:4px 8px;font-size:0.85rem;"><option value="starter"${(r.depositTier||'starter')==='starter'?' selected':''}>Starter ($0 up, builds to $5K)</option><option value="low"${r.depositTier==='low'?' selected':''}>Low Risk ($5,000)</option><option value="medium"${r.depositTier==='medium'?' selected':''}>Medium ($10,000)</option><option value="high"${r.depositTier==='high'?' selected':''}>High ($15,000)</option><option value="vhigh"${r.depositTier==='vhigh'?' selected':''}>Very High ($20,000)</option></select></div></div>
+          <div class="item"><div class="lbl">Deposit Status</div><div class="val"><button class="btn btn-sm ${r.depositPaid?'btn-success':'btn-warning'}" onclick="toggleDepositPaid('${r.id||r._id}',${!r.depositPaid})">${r.depositPaid?'✅ Paid':'⏳ Unpaid'}</button> <span style="font-size:0.82rem;color:#9B9BC0;">Balance: $${((r.depositBalance||0)).toLocaleString()}</span></div></div>
+        </div>
+      </div>
+      <div class="panel"><div class="panel-header"><h2>Customers (${custs.length})</h2></div>
+      <div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>KYC</th></tr></thead><tbody>${custRows}</tbody></table></div></div>`;
+  }catch(e){toast('Failed to load reseller','error')}
+}
+function showCreateReseller(){
+  document.getElementById('modalContent').innerHTML=`
+    <h3>Create Reseller</h3>
+    <label>Full Name</label><input id="rName">
+    <label>Email</label><input id="rEmail" type="email">
+    <label>Company</label><input id="rCompany">
+    <label>Password</label><input id="rPass" type="password">
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="createReseller()">Create</button>
+    </div>`;
+  document.getElementById('modal').classList.add('show');
+}
+async function createReseller(){
+  try{
+    await apiPost('/resellers',{name:document.getElementById('rName').value,email:document.getElementById('rEmail').value,company:document.getElementById('rCompany').value,password:document.getElementById('rPass').value});
+    closeModal();toast('Reseller created');loadResellers();
+  }catch(e){toast('Failed to create reseller','error')}
+}
+async function deactivateReseller(id){
+  if(!confirm('Deactivate this reseller?'))return;
+  try{await apiDelete('/resellers/'+id);toast('Reseller deactivated');loadResellers()}catch(e){toast('Failed','error')}
+}
+function closeModal(){document.getElementById('modal').classList.remove('show')}
+function executePendingAction(){closeModal();if(_pendingAction){_pendingAction();_pendingAction=null;}}
+function confirmKyc(id,status){
+  const c=_merchantView||{};
+  const name=c.name||c.fullName||'this merchant';
+  const label=status==='verified'?'Approve':'Reject';
+  const btnClass=status==='verified'?'btn-success':'btn-danger';
+  _pendingAction=()=>kycOverride(id,status);
+  document.getElementById('modalContent').innerHTML=`
+    <h3>${label} KYC</h3>
+    <p style="margin-bottom:8px;color:var(--text-muted)">Merchant: <strong style="color:var(--text)">${name}</strong></p>
+    <p style="color:var(--text-muted);font-size:14px">Are you sure you want to ${status==='verified'?'approve':'reject'} KYC for this merchant?</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn ${btnClass}" onclick="executePendingAction()">Yes, ${label}</button>
+    </div>`;
+  document.getElementById('modal').classList.add('show');
+}
+function confirmApproveWd(id){
+  const w=_wdMap[id]||{};
+  _pendingAction=()=>approveWd(id);
+  document.getElementById('modalContent').innerHTML=`
+    <h3>Approve Withdrawal</h3>
+    <p style="margin-bottom:6px;color:var(--text-muted)">Merchant: <strong style="color:var(--text)">${w.customer||'—'}</strong></p>
+    <p style="margin-bottom:16px;color:var(--text-muted)">Amount: <strong style="color:var(--text);font-size:20px">${w.amount||'—'}</strong></p>
+    <p style="color:var(--text-muted);font-size:14px">Are you sure you want to approve this withdrawal?</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-success" onclick="executePendingAction()">Yes, Approve</button>
+    </div>`;
+  document.getElementById('modal').classList.add('show');
+}
+function confirmRejectWd(id){
+  const w=_wdMap[id]||{};
+  _pendingAction=()=>rejectWd(id);
+  document.getElementById('modalContent').innerHTML=`
+    <h3>Reject Withdrawal</h3>
+    <p style="margin-bottom:6px;color:var(--text-muted)">Merchant: <strong style="color:var(--text)">${w.customer||'—'}</strong></p>
+    <p style="margin-bottom:16px;color:var(--text-muted)">Amount: <strong style="color:var(--text);font-size:20px">${w.amount||'—'}</strong></p>
+    <p style="color:var(--text-muted);font-size:14px">Are you sure you want to reject this withdrawal?</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="executePendingAction()">Yes, Reject</button>
+    </div>`;
+  document.getElementById('modal').classList.add('show');
+}
+
+// TRANSACTIONS
+async function loadTransactions(){
+  try{
+    const d=await apiFetch('/transactions');
+    allTransactions=(d.data||d.transactions||d)||[];
+    renderTransactions(allTransactions);
+  }catch(e){document.getElementById('txTbody').innerHTML='<tr><td colspan="8">Failed to load</td></tr>'}
+}
+function renderTransactions(list){
+  document.getElementById('txTbody').innerHTML=list.map(t=>`<tr>
+    <td>${fmtDateTime(t.createdAt||t.date)}</td><td>${fmt(t.amount)}</td><td>${badge(t.status)}</td>
+    <td>${t.customerName||t.customer||'—'}</td><td>${t.merchantName||t.merchant||'—'}</td><td>${t.resellerName||t.reseller||'—'}</td><td style="font-size:12px">${t.reference||t.ref||'—'}</td>
+    <td>${t.status!=='refunded'?`<button class="btn btn-sm btn-danger" onclick="refundTx('${t.id||t._id}')">Refund</button>`:''}</td>
+  </tr>`).join('')||'<tr><td colspan="8" style="text-align:center;padding:32px">No transactions</td></tr>';
+}
+function filterTransactions(){
+  const status=document.getElementById('txStatusFilter').value;
+  const q=document.getElementById('txSearch').value.toLowerCase();
+  renderTransactions(allTransactions.filter(t=>{
+    if(status&&t.status!==status)return false;
+    if(q&&!(t.customerName||t.customer||'').toLowerCase().includes(q)&&!(t.reference||t.ref||'').toLowerCase().includes(q))return false;
+    return true;
+  }));
+}
+async function refundTx(id){
+  if(!confirm('Refund this transaction?'))return;
+  try{await apiPost('/transactions/'+id+'/refund',{});toast('Transaction refunded');loadTransactions()}catch(e){toast('Refund failed','error')}
+}
+
+// WITHDRAWALS
+async function loadWithdrawals(){
+  try{
+    const d=await apiFetch('/withdrawals');
+    allWithdrawals=(d.data||d.withdrawals||d)||[];
+    renderWithdrawals(allWithdrawals);
+  }catch(e){document.getElementById('wdTbody').innerHTML='<tr><td colspan="5">Failed to load</td></tr>'}
+}
+function renderWithdrawals(list){
+  _wdMap={};
+  list.forEach(w=>{_wdMap[w.id||w._id]={amount:fmt(w.amount),customer:w.customerName||w.customer||'—'}});
+  document.getElementById('wdTbody').innerHTML=list.map(w=>`<tr>
+    <td>${fmtDateTime(w.createdAt||w.date)}</td><td>${w.customerName||w.customer||'—'}</td><td>${fmt(w.amount)}</td>
+    <td>${badge(w.status)}</td>
+    <td>${w.status==='pending'?`<button class="btn btn-sm btn-success" onclick="confirmApproveWd('${w.id||w._id}')">Approve</button> <button class="btn btn-sm btn-outline-danger" onclick="confirmRejectWd('${w.id||w._id}')" style="margin-left:4px">Reject</button>`:''}</td>
+  </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;padding:32px">No withdrawals</td></tr>';
+}
+function filterWithdrawals(){
+  const f=document.getElementById('wdFilter').value;
+  renderWithdrawals(f?allWithdrawals.filter(w=>w.status===f):allWithdrawals);
+}
+async function approveWd(id){
+  try{await apiPost('/withdrawals/'+id+'/approve',{});toast('Withdrawal approved');loadWithdrawals()}catch(e){toast('Failed','error')}
+}
+async function rejectWd(id){
+  try{await apiPost('/withdrawals/'+id+'/reject',{});toast('Withdrawal rejected');loadWithdrawals()}catch(e){toast('Failed','error')}
+}
+
+// AUDIT
+async function loadAudit(){
+  try{
+    const d=await apiFetch('/audit');
+    const items=(d.data||d.entries||d.audit||d)||[];
+    document.getElementById('auditList').innerHTML=items.map(a=>`
+      <div class="audit-item">
+        <div class="audit-dot"></div>
+        <div><div class="action">${a.action||a.event||'—'}</div>
+        <div class="meta">${a.user||a.admin||'System'} · ${fmtDateTime(a.createdAt||a.timestamp||a.date)} · ${a.details||a.description||''}</div></div>
+      </div>`).join('')||'<div class="loading-state">No audit entries</div>';
+  }catch(e){document.getElementById('auditList').innerHTML='<div class="loading-state">Failed to load audit log</div>'}
+}
+
+// Close modal on overlay click
+document.getElementById('modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal()});
+// Enter key login
+document.getElementById('passwordInput').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+// Init
+init();
+</script>
+</body>
+</html>
